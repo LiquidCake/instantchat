@@ -40,7 +40,6 @@ ctrlAuthPasswd: "password111"
 envType: "dev"
 
 domainProd: "mydomain.com"
-#domainDev: "127.0.0.1"
 domainDev: "192.168.1.100"
 
 mainHttpSchemaProd: "https"
