@@ -1,0 +1,34 @@
+@font-face {
+    font-family: 'Blinker';
+    font-style: normal;
+    font-weight: 100;
+    src: local('Blinker ExtraLight'), local('Blinker-ExtraLight'), url(fonts/Blinker-ExtraLight.ttf) format('ttf');
+}
+
+@font-face {
+    font-family: 'Blinker';
+    font-style: normal;
+    font-weight: 200;
+    src: local('Blinker Thin'), local('Blinker-Thin'), url(fonts/Blinker-Thin.ttf) format('ttf');
+}
+
+@font-face {
+    font-family: 'Blinker';
+    font-style: normal;
+    font-weight: 300;
+    src: local('Blinker Light'), local('Blinker-Light'), url(fonts/Blinker-Light.ttf) format('ttf');
+}
+
+@font-face {
+    font-family: 'Blinker';
+    font-style: normal;
+    font-weight: 400;
+    src: local('Blinker'), local('Blinker'), url(fonts/Blinker-Regular.ttf) format('ttf');
+}
+
+@font-face {
+    font-family: 'Blinker';
+    font-style: normal;
+    font-weight: 600;
+    src: local('Blinker SemiBold'), local('OpenSans-SemiBold'), url(fonts/Blinker-SemiBold.ttf) format('ttf');
+}

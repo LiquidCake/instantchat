@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Backends control page</title>
+        <link rel="stylesheet" href="/static/${BUILD_VERSION}/css/ctrl.css" />
+        <script src="/static/${BUILD_VERSION}/js/common.js" type="text/javascript"></script>
+        <script src="/static/${BUILD_VERSION}/js/ctrl.js" type="text/javascript"></script>
+
+        <style>
+            h3 {
+                margin-top: 20px;
+            }
+
+            select {
+                margin-bottom: 20px;
+            }
+
+            .room-wr {
+                margin-bottom: 30px;
+                border-bottom: 1px solid #ccc;
+            }
+        </style>
+
+        <script>
+            function onRoomSortingChange() {
+                const roomSortingDropdown = document.getElementById("room_sorting");
+                setCookie('X-rooms_order', roomSortingDropdown.options[roomSortingDropdown.selectedIndex].value);
+
+                location.reload();
+
+                return false;
+            }
+
+            function deleteRoom(elem) {
+                const roomName = elem.getAttribute('data-room-name');
+
+                if (!confirm("Sure? Deleting '" + roomName + "'")) {
+                    return;
+                }
+
+                const xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState === 4 && this.status !== 200) {
+                        alert('Error: ' + this.status);
+                    }
+                    if (this.readyState === 4 && this.status === 200) {
+                        location.reload();
+                    }
+                };
+
+                xhttp.open("GET", "./ctrl_rooms?"
+                    + URL_PARAM_BACKEND_HOST + '=' + URL_PARAMS.get(URL_PARAM_BACKEND_HOST)
+                    + '&deleteRoomName=' + roomName, true);
+                xhttp.send();
+            }
+        </script>
+    </head>
+<body>
+<h3>Rooms sorting</h3>
+<select id="room_sorting" onchange="onRoomSortingChange();">
+    <option value="by_id">by id</option>
+    <option value="by_name">by name</option>
+    <option value="by_started_at">by started_at</option>
+    <option value="by_active_room_users_num">by active_room_users_num</option>
+    <option value="by_dead_socket_UUIDs_num">by dead_socket_UUIDs_num</option>
+</select>
+
+<h1>Rooms</h1>
+
+{{ range .activeRooms }}
+<div class="room-wr">
+    <p>Id: {{.Id}}</p>
+    <p>Name: {{.Name}}</p>
+    <p>StartedAt: {{.StartedAt}}</p>
+    <p>ActiveRoomUsersNum: {{.ActiveRoomUsersNum}}</p>
+
+    <a onclick="deleteRoom(this)" data-room-name="{{.Name}}" href="javascript:void(0);">Delete</a>
+</div>
+{{ end }}
+</body>
+</html>

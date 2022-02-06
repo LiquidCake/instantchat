@@ -1,0 +1,137 @@
+
+html, body, .main-body-wr {
+    height: 100%;
+    font-family: "Cambria Math", sans-serif;
+    font-size: 14px;
+}
+
+h1, h2, h3, h4, h5 {
+    margin: 0 0 10px;
+}
+
+.clear-fix {
+    clear: both;
+}
+
+.box-sizing-fix {
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+}
+
+#rest_error_txt {
+    color: #CA984E;
+    min-width: 400px;
+    min-height: 50px;
+    float: left;
+    padding: 10px;
+}
+
+#srv_error_txt {
+    color: sienna;
+    min-width: 400px;
+    min-height: 50px;
+    float: left;
+    padding: 10px;
+}
+
+#ws_error_txt {
+    color: brown;
+    min-width: 400px;
+    min-height: 50px;
+    float: left;
+    padding: 10px;
+}
+
+#raw_input {
+    width: 100%;
+    min-height: 250px;
+    border: 2px solid #0c8111;
+    margin-top: 10px;
+    display: block;
+}
+
+#raw_output {
+    color: gray;
+    border: 2px solid #0c8173;
+    height: 100%;
+    padding: 10px;
+    width: 100%;
+    min-height: 250px;
+}
+
+#text_msg_output {
+    width: 100%;
+    min-height: 400px;
+    border: 2px solid #0c8173;
+}
+
+.main-body-room-wr {
+    min-width: 500px;
+    min-height: 250px;
+}
+
+.main-body-message-wr {
+    min-width: 500px;
+    min-height: 250px;
+}
+
+.main-body-message-wr p button {
+    margin-left: 8px;
+}
+
+.main-head-wr {
+    margin-bottom: 15px;
+    padding: 10px;
+}
+
+.main-body-row-wr {
+    margin-bottom: 15px;
+    height: 100%;
+}
+
+.main-body-cell-wr {
+    float: left;
+    width: 45%;
+    margin-bottom: 15px;
+    border: 2px solid darkcyan;
+    padding: 10px;
+}
+
+.main-body-cell-wr.main-body-left {
+    width: 45%;
+    margin-right: 3%;
+}
+
+.main-body-cell-wr p {
+    margin: 0 0 6px;
+}
+
+.main-body-left .main-body-cell-wr {
+    margin: 8px;
+}
+
+.main-body-right {
+    width: 32%;
+}
+
+.main-body-right .main-body-cell-wr {
+    width: 90%;
+}
+
+.main-body-room-wr, .main-body-message-wr {
+    min-width: 300px;
+}
+
+.main-head-wr a {
+    font-size: 16px;
+}
+
+.raw_input_wr {
+    padding: 8px;
+}
+
+.main_info {
+    border-bottom: 1px solid #c8cbcf;
+    margin-bottom: 15px;
+}

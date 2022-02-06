@@ -1,0 +1,42 @@
+version: "3.2"
+
+services:
+  backend:
+    image: backend
+    restart: always
+    environment:
+      - INSTANCE_NUM=3
+      - LOG_LEVEL=INFO
+      #- LOG_LEVEL=TRACE
+    ports:
+      - '8080:8080'
+    volumes:
+      - type: bind
+        source: /var/log/backend
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  node-exporter:
+    image: prom/node-exporter:v0.18.1
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    ports:
+      - 9100:9100
+    labels:
+      org.label-schema.group: "monitoring"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"

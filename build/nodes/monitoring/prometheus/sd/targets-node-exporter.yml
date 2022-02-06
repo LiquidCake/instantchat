@@ -1,0 +1,10 @@
+---
+- targets:
+  - host-gateway:9100
+  - host-backend1:9100
+  - host-backend2:9100
+  - host-backend3:9100
+  - host-monitoring:9100
+  labels:
+    env: prod
+    job: node-exporter

@@ -1,0 +1,81 @@
+version: "3.2"
+
+services:
+  nginx:
+    image: nginx
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - type: bind
+        source: /var/log/nginx
+        target: /var/log/nginx
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  aux-srv:
+    image: aux-srv
+    restart: always
+    environment:
+      - LOG_LEVEL=INFO
+      #- LOG_LEVEL=TRACE
+    ports:
+      - '8080:8080'
+    volumes:
+      - type: bind
+        source: /var/log/aux-srv
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  file-srv:
+    image: file-srv
+    restart: always
+    environment:
+      - LOG_LEVEL=INFO
+      #- LOG_LEVEL=TRACE
+    ports:
+      - '8085:8085'
+    volumes:
+      - type: volume
+        source: file-srv-files
+        target: /var/file-srv/uploaded-files/
+      - type: bind
+        source: /var/log/file-srv
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  node-exporter:
+    image: prom/node-exporter:v0.18.1
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    ports:
+      - 9100:9100
+    labels:
+      org.label-schema.group: "monitoring"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+
+volumes:
+  file-srv-files:

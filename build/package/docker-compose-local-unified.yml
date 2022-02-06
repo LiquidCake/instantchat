@@ -1,0 +1,122 @@
+version: "3.2"
+
+services:
+  aux-srv:
+    image: aux-srv
+    restart: always
+    environment:
+      # - LOG_LEVEL=INFO
+      - LOG_LEVEL=TRACE
+      - LOG_FILE_NAME=aux-srv.log
+    ports:
+      - '8090:8080'
+    volumes:
+      - type: bind
+        source: ../../logs
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  file-srv:
+    image: file-srv
+    restart: always
+    environment:
+      # - LOG_LEVEL=INFO
+      - LOG_LEVEL=TRACE
+      - LOG_FILE_NAME=file-srv.log
+    ports:
+      - '8085:8085'
+    volumes:
+      - type: volume
+        source: file-srv-files
+        target: /var/file-srv/uploaded-files/
+      - type: bind
+        source: ../../logs
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  backend1:
+    image: backend
+    restart: always
+    environment:
+      - INSTANCE_NUM=1
+      - LOG_LEVEL=INFO
+      # LOG_LEVEL=TRACE
+      - LOG_FILE_NAME=backend-1.log
+    ports:
+      - '8080:8080'
+    volumes:
+      - type: bind
+        source: ../../logs
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  backend2:
+    image: backend
+    restart: always
+    environment:
+      - INSTANCE_NUM=2
+      - LOG_LEVEL=INFO
+      #- LOG_LEVEL=TRACE
+      - LOG_FILE_NAME=backend-2.log
+    ports:
+      - '8081:8080'
+    volumes:
+      - type: bind
+        source: ../../logs
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  backend3:
+    image: backend
+    restart: always
+    environment:
+      - INSTANCE_NUM=3
+      - LOG_LEVEL=INFO
+      #- LOG_LEVEL=TRACE
+      - LOG_FILE_NAME=backend-3.log
+    ports:
+      - '8082:8080'
+    volumes:
+      - type: bind
+        source: ../../logs
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  nginx:
+    image: nginx
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - type: bind
+        source: ../../logs
+        target: /var/log/nginx/
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+volumes:
+  file-srv-files:

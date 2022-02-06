@@ -1,0 +1,27 @@
+http:
+  port: ":8080"
+  timeoutSec: 30
+
+shutdownWaitTimeoutSec: 10
+
+logging:
+  logMaxSizeMb: 100
+  logMaxFilesToKeep: 3
+  logMaxFileAgeDays: 60
+
+#even for local setup - set local machine's IP to 'allowedOrigins' and use it instead of localhost
+allowedOrigins:
+  - http://192.168.1.100
+
+forbiddenRoomNames:
+  - metrics
+  - ctrl
+  - ctrl_rooms
+  - ws_entry
+  - hw
+  - dashboards
+  - about
+  - control_page_proxy
+
+ctrlAuthLogin: "admin111"
+ctrlAuthPasswd: "password111"

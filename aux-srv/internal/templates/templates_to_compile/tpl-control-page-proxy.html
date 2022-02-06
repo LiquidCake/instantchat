@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Backend instances proxy</title>
+
+    <script>
+        window.onload = function () {
+            const backendLinks = document.getElementsByClassName('backend-instance-link');
+            for (let i = 0; i < backendLinks.length; i++) {
+                backendLinks[i].href = decodeURIComponent(backendLinks[i].href);
+            }
+        };
+    </script>
+</head>
+<body>
+
+<div class="main-body-wr">
+    <div class="main-body-row-wr">
+        <h3>Backend instances:</h3>
+        <ul>
+            {{ range .backendInstances }}
+            <li>
+                <a class="backend-instance-link" href="./ctrl?backendHost={{.}}">{{.}}</a>
+            </li>
+            {{ end }}
+        </ul>
+    </div>
+
+</div>
+</body>
+</html>

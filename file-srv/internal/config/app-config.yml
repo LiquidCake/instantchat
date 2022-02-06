@@ -1,0 +1,10 @@
+http:
+  port: ":8085"
+  timeoutSec: 30
+
+shutdownWaitTimeoutSec: 10
+
+logging:
+  logMaxSizeMb: 100
+  logMaxFilesToKeep: 3
+  logMaxFileAgeDays: 60
