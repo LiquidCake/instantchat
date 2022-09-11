@@ -117,6 +117,12 @@ Build (with ```./rebuild-docker.sh dev```) and start project
 
 ### 1. Init environment for all server nodes
 
+#### create OS user on all server nodes
+```
+sudo adduser instantchat
+usermod -aG sudo instantchat
+```
+
 copy env init scripts to server nodes
 
 (example scripts are made for Ubuntu Linux though doesn't matter really)
@@ -137,12 +143,6 @@ scp /instantchat/build/nodes/backend/init-backend.sh instantchat@192.168.1.103:/
 ```
 
 #### execute on all server nodes
-
-add OS user
-```
-sudo adduser instantchat
-usermod -aG sudo instantchat
-```
 
 init env (install docker etc)
 
