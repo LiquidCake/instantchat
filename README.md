@@ -60,11 +60,11 @@ There are 3 deployment configurations prepared:
 
 ```'monitoring node' - grafana + prometheus```
 
+`It is possible to deploy nginx, aux-srv, file-srv separately instead of using a 'gateway' node that unifies them, but below examples are given for 'gateway mode' approach`
+
 3. single-node deployment (`Single-node deployment` section) -
 ```all services are deployed in on-server docker via single compose file```
 
-
-It is possible to deploy nginx, aux-srv, file-srv separately instead of using a 'gateway' node that unifies them, but below examples are given for 'gateway mode' approach
 
 ## Configuration:
 
