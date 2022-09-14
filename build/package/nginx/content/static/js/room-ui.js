@@ -492,7 +492,7 @@ function initRoomPageUI () {
             hideFolkPicksMobile();
 
             if ($spinnerOverlay.hasClass('d-none')) {
-                showMenuMobile();
+                showMenuMobileInRoom();
             }
         }
     });
@@ -798,7 +798,7 @@ function toggleMenu () {
 
     if (isOnMobileScreenSize()) {
         if ($spinnerOverlay.hasClass('d-none')) {
-            showMenuMobile();
+            showMenuMobileInRoom();
         }
     } else {
         if (!menuHiddenDesktop) {
@@ -863,12 +863,16 @@ function showFolkPicksMobile() {
         $folkPicksWr.css('display', 'block');
         showMainOverlay();
 
-        $userMessageTextarea.focusout();
-
         hideMobileKeyboard();
 
         resizeWrappersHeight();
     }
+}
+
+function showMenuMobileInRoom() {
+     hideMobileKeyboard();
+
+     showMenuMobile();
 }
 
 function hideFolkPicksMobile() {
@@ -921,7 +925,10 @@ function resizeWrappersHeight (needToScrollChatToBottom) {
 
     const userMessageWrHeightPx = $userMessageWr.outerHeight(true);
 
-    $roomMessagesWr.css('height', (currentViewportHeight - roomInfoCollapseWrBottomEdgePositionPx - userMessageWrHeightPx) + 'px');
+    const roomMessagesWrHeightPx =
+        Math.floor((currentViewportHeight - roomInfoCollapseWrBottomEdgePositionPx - userMessageWrHeightPx));
+
+    $roomMessagesWr.css('height', roomMessagesWrHeightPx + 'px');
 
     //resize Folk Picks Messages wrapper
     const folkPicksTitleBottomEdgePositionPx =
@@ -930,7 +937,10 @@ function resizeWrappersHeight (needToScrollChatToBottom) {
 
     const folkPicksBotWrHeightPx = $folkPicksBotWr.css('display') !== 'none' ? $folkPicksBotWr.outerHeight(true) : 0;
 
-    $folkPicksMessagesWr.css('height', (currentViewportHeight - folkPicksTitleBottomEdgePositionPx - folkPicksBotWrHeightPx) + 'px');
+    const $folkPicksMessagesWrHeightPx =
+        Math.floor((currentViewportHeight - folkPicksTitleBottomEdgePositionPx - folkPicksBotWrHeightPx));
+
+    $folkPicksMessagesWr.css('height', $folkPicksMessagesWrHeightPx + 'px');
 
     if (needToScrollChatToBottom) {
         scrollChatBottom();
@@ -1006,7 +1016,7 @@ function toggleRoomInfoBlock(e) {
             hideRoomNameChangeInput();
         } else {
             if (isMobileClientDevice) {
-                changeNavbarMode(false);
+                changeNavbarMode(currentViewportHeight > NAVBAR_COMPACT_MODE_MAX_HEIGHT_PX);
             }
 
             $roomInfoCollapseShareImg.addClass('d-none');
@@ -1207,7 +1217,7 @@ function createTextMessageDom(textMessage, userName, isAnon, originalMessageShor
 
     $messageTextBlock.append($messageTextInnerBlock);
 
-    //buttons
+    //voting buttons
     const $messageButtonsBlock = $('<div class="room-msg-buttons">');
     const $messageButtonsSupportBlock = $('<a href="javascript:void(0);" class="room-msg-buttons-support font-weight-bold">');
     $messageButtonsSupportBlock
@@ -1232,12 +1242,6 @@ function createTextMessageDom(textMessage, userName, isAnon, originalMessageShor
     $messageWrBlock.append($('<div class="clearfix"></div>'));
 
     $messageMainWrBlock.append($messageWrBlock);
-
-    //if this message is from room admin - add message mark
-    if (roomCreatorUserInRoomUUID && roomCreatorUserInRoomUUID === messageUserId) {
-        $messageWrBlock.find('.message-marks-wr')
-            .append($('<span>adm</span>'));
-    }
 
     return $messageMainWrBlock;
 }
@@ -1284,6 +1288,7 @@ function hideRoomDescriptionEditingBlock () {
 }
 
 function hideMobileKeyboard() {
+    $userMessageTextarea.focusout();
     document.activeElement.blur();
     $("input").blur();
 }
@@ -1835,12 +1840,20 @@ function isAnyPopupOpened () {
 
 function toggleBotExample () {
     if ($botsExampleWr.hasClass('d-none')) {
-        $botsExampleWr.removeClass('d-none');
-        $botsShowExampleBtn.text('hide bot example');
+        showBotExample();
     } else {
-        $botsExampleWr.addClass('d-none');
-        $botsShowExampleBtn.text('show bot example');
+        hideBotExample();
     }
+}
+
+function showBotExample () {
+    $botsExampleWr.removeClass('d-none');
+    $botsShowExampleBtn.text('hide bot example');
+}
+
+function hideBotExample () {
+    $botsExampleWr.addClass('d-none');
+    $botsShowExampleBtn.text('show bot example');
 }
 
 function isSwipedOnRoomChangeInput () {

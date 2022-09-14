@@ -316,7 +316,7 @@ a:hover, a:active {
   right: 0;
   z-index: 130;
   background-color: #000;
-  opacity: 0;
+  opacity: 0.07;
 }
 
 .spinner-overlay {
@@ -1464,6 +1464,13 @@ a.recent-room-title {
   z-index: 140;
 }
 
+.message-context-menu-mid-screen {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
 .message-context-menu a {
   display: block;
   margin-bottom: 0;
@@ -1987,7 +1994,7 @@ a.message-highlight-link:hover {
   border: 1px solid #22b14c;
   border-radius: 2px;
   height: 1.5rem;
-  font-size: 1.2rem;
+  font-size: 1rem;
   margin-top: 0.5rem;
   width: 100%;
   max-width: 200px;

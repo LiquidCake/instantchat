@@ -2,7 +2,7 @@
 <html lang="en" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no">
     <meta name="description" content="Instantchat - instant chat rooms">
     <meta name="author" content="">
 
@@ -76,7 +76,7 @@
 
 <!-- below blocks exist as 1 instance and are appended where needed -->
 
-<div class="message-context-menu d-none">
+<div class="message-context-menu noselect d-none">
 	<a id="message-tooltip-goto" href="javascript:void(0);">
 		<img src="/static/${BUILD_VERSION}/img/corner-up-left.svg" title="goto" alt="gt">
 		go to message
@@ -529,11 +529,11 @@
 							</div>
 
 							<div class="user-message-wr">
-								<div class="chat-scroll-overlay d-none">
+								<div class="chat-scroll-overlay noselect d-none">
 									scroll down
 								</div>
 
-								<div class="user-message-wr-collapse-wr">
+								<div class="user-message-wr-collapse-wr noselect">
 									<div>
 										<div class="user-message-wr-collapse-sending-indication d-none">sending...</div>
 										<img src="/static/${BUILD_VERSION}/img/more-horizontal.svg" class="user-message-wr-collapse-img" title="show/collapse" alt="toggle" />
@@ -541,9 +541,9 @@
 								</div>
 
 								<div class="user-message-content-wr">
-									<div class="top-notif-msg"></div>
-									<div class="user-message-wr-notif-msg"></div>
-									<div class="user-message-wr-error-msg"></div>
+									<div class="top-notif-msg noselect"></div>
+									<div class="user-message-wr-notif-msg noselect"></div>
+									<div class="user-message-wr-error-msg noselect"></div>
 
 									<div class="search-bar-wr d-none">
 										<input class="search-bar-input" placeholder="search..." />
@@ -626,7 +626,7 @@
 						</div>
 
 						<div class="col-xl-3 picks-wr">
-							<h1 class="picks-wr-title">folk picks</h1>
+							<h1 class="picks-wr-title noselect">folk picks</h1>
 
 							<div class="picks-messages-wr">
 								<div class="page-room-empty-picks-wr">

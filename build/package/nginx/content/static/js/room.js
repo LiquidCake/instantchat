@@ -32,8 +32,8 @@ let messageIdToTextSearchInfo;
 let roomUUID;
 let roomHasPassword;
 let userInRoomUUID;
-let currentUserInfo;
 let roomCreatorUserInRoomUUID;
+let currentUserInfo;
 
 let currentRoomName;
 let isLoggedIn;
@@ -65,6 +65,9 @@ let wsReconnectTimeout;
 let onSelectionChangeTimeout;
 let onScrollBodyTimeout;
 let onMessageTextTypingTimeout;
+let longTouchTimeout;
+
+let isInsideLongTouch = false;
 
 let reconnectAttempt = 1;
 
@@ -227,6 +230,8 @@ function init () {
     $botsShowExampleBtn.on('click', toggleBotExample);
 
     $botsAddNewBtn.on('click', function () {
+        hideBotExample();
+
         const newBotId = new Date().getTime();
 
         const $newBotBlock = $botsEmptyBotForCloningBlock.clone();
@@ -1068,8 +1073,9 @@ function processRoomDescriptionChangedCommand (message) {
     //for room's creator user and self user - add visual indication to user's messages and nameplates
     for (let msgId in roomMessageIdToDOMElem) {
         const $messageBlock = roomMessageIdToDOMElem[msgId];
+        const messageAuthorUserId = $messageBlock.attr('data-user-id');
 
-        if (roomCreatorUserInRoomUUID === $messageBlock.attr('data-user-id')) {
+        if (roomCreatorUserInRoomUUID === messageAuthorUserId) {
             $messageBlock.addClass('room-msg-room-creator');
 
             $messageBlock.find('.message-marks-wr')
@@ -1085,8 +1091,12 @@ function processRoomDescriptionChangedCommand (message) {
             }
         }
 
-        if (userInRoomUUID === $messageBlock.attr('data-user-id')) {
+        if (userInRoomUUID === messageAuthorUserId) {
             $messageBlock.addClass('room-msg-author-self');
+
+            if (roomCreatorUserInRoomUUID !== userInRoomUUID) {
+                $messageBlock.find('.room-msg-buttons').addClass('d-none');
+            }
 
             const $messageInPicksBlock = findFolkPicksMessageBlockById(msgId);
 
@@ -1495,8 +1505,7 @@ function processSupportOrRejectCommand(message) {
 
             //cancel text selection mode for message block copy
             if (messageTextSelectionInProgressId) {
-                $messageInFolkPicksScreen.off('contextmenu');
-                $messageInFolkPicksScreen.on('contextmenu', roomMessageOnContextMenu);
+                attachLongTouchContextMenuToElement($messageInFolkPicksScreen);
 
                 $messageInFolkPicksScreen.removeClass('text-selection-active');
 
@@ -1836,12 +1845,21 @@ function processTextMessage(textMessage, roomMessagesCopedAt, allTextMessages, n
 
     if (roomCreatorUserInRoomUUID && roomCreatorUserInRoomUUID === messageAuthorUserId) {
         $roomMessage.addClass('room-msg-room-creator');
+
+        //if this message is from room admin - add message mark
+        $roomMessage.find('.message-marks-wr')
+            .append($('<span>adm</span>'));
     }
 
     if (userInRoomUUID && userInRoomUUID === messageAuthorUserId) {
         $roomMessage.addClass('room-msg-author-self');
         $roomMessage.addClass('room-msg-main-wr-self');
 
+        if (roomCreatorUserInRoomUUID && roomCreatorUserInRoomUUID !== userInRoomUUID) {
+            $roomMessage.find('.room-msg-buttons').addClass('d-none');
+        }
+
+        //track last user's message processed by server
         if (messageId > lastCurrentUserSentMessageId) {
             lastCurrentUserSentMessageId = messageId;
         }
@@ -1854,7 +1872,8 @@ function processTextMessage(textMessage, roomMessagesCopedAt, allTextMessages, n
     }
 
     //set right-click and long-touch behaviour
-    $roomMessage.on('contextmenu', roomMessageOnContextMenu);
+    attachLongTouchContextMenuToElement($roomMessage);
+
     $roomMessage.on('click', function (e) {
         const $clickedBlock = $(e.target);
 
@@ -2354,10 +2373,45 @@ function processErrorCommand (message, alternativeRoomNamePostfixes) {
 
 /* Misc */
 
+function attachLongTouchContextMenuToElement($elem) {
+    $elem.off('contextmenu touchstart touchmove touchend');
+
+    if (!isMobileClientDevice) {
+        $elem.on('contextmenu', roomMessageOnContextMenu);
+    } else {
+        //logic to detect long touch, needed for ios safari
+
+        $elem.on("touchstart", function(e) {
+            // timer to detect long-touch
+            longTouchTimeout = setTimeout(function() {
+                isInsideLongTouch = true;
+            }, 800);
+        });
+        $elem.on("touchmove", function(e) {
+            clearTimeout(longTouchTimeout);
+
+            if (isInsideLongTouch) {
+                isInsideLongTouch = false;
+            }
+        });
+        $elem.on("touchend", function(e) {
+            clearTimeout(longTouchTimeout);
+
+            if (isInsideLongTouch) {
+                isInsideLongTouch = false;
+
+                roomMessageOnContextMenu(e);
+            }
+        });
+    }
+}
+
 function roomMessageOnContextMenu (e) {
     const $clickedBlock = $(e.target);
 
     cancelMessageTextSelectionMode();
+
+    hideMobileKeyboard();
 
     //if clicked on link or started desktop text selection
     if ($clickedBlock.hasClass('message-highlight-link') ||
@@ -2378,34 +2432,41 @@ function roomMessageOnContextMenu (e) {
     const isMessageInFolkPicks = !!$messageBlock.closest('.picks-messages-wr').length;
     const isUserDrawingMessage = $messageBlock.attr('data-meta-marker') === MESSAGE_META_MARKER_TYPE_DRAWING;
 
-    //click coordinates inside element
-    const clickCoordsInsideElementPair = getClickCoordinatesInsideElement($messageBlock[0], e);
-    const x = clickCoordsInsideElementPair.x;
-    const y = clickCoordsInsideElementPair.y;
-    const messageBlockRect = clickCoordsInsideElementPair.rect;
+    //for desktop - position menu block relative to clicked message block
+    if (!isMobileClientDevice) {
+        $messageContextMenu.removeClass('message-context-menu-mid-screen');
 
-    //how far click coords are from element's (!) left border
-    const horizontalOffsetPercent = x * 100 / messageBlockRect.width;
+        //click coordinates inside element
+        const clickCoordsInsideElementPair = getClickCoordinatesInsideElement($messageBlock[0], e);
+        const x = clickCoordsInsideElementPair.x;
+        const y = clickCoordsInsideElementPair.y;
+        const messageBlockRect = clickCoordsInsideElementPair.rect;
 
-    if (horizontalOffsetPercent < 50) {
-        $messageContextMenu.css('right', 'unset');
-        $messageContextMenu.css('left', x);
+        //how far click coords are from element's (!) left border
+        const horizontalOffsetPercent = x * 100 / messageBlockRect.width;
+
+        if (horizontalOffsetPercent < 50) {
+            $messageContextMenu.css('right', 'unset');
+            $messageContextMenu.css('left', x);
+        } else {
+            $messageContextMenu.css('left', 'unset');
+            $messageContextMenu.css('right', messageBlockRect.width - x);
+        }
+
+        //how far click coords are from screen's (!) top border
+        const verticalOffsetPercent = e.pageY * 100 / $window.height();
+
+        if (verticalOffsetPercent < 50) {
+            $messageContextMenu.css('bottom', 'unset');
+            $messageContextMenu.css('top', y);
+        } else {
+            $messageContextMenu.css('top', 'unset');
+            $messageContextMenu.css('bottom', messageBlockRect.height - y);
+        }
     } else {
-        $messageContextMenu.css('left', 'unset');
-        $messageContextMenu.css('right', messageBlockRect.width - x);
+        //for mobile - draw conext menu at the middle of screen
+        $messageContextMenu.addClass('message-context-menu-mid-screen');
     }
-
-    //how far click coords are from screen's (!) top border
-    const verticalOffsetPercent = e.pageY * 100 / $window.height();
-
-    if (verticalOffsetPercent < 50) {
-        $messageContextMenu.css('bottom', 'unset');
-        $messageContextMenu.css('top', y);
-    } else {
-        $messageContextMenu.css('top', 'unset');
-        $messageContextMenu.css('bottom', messageBlockRect.height - y);
-    }
-
 
     /* Menu buttons */
 
@@ -2416,6 +2477,7 @@ function roomMessageOnContextMenu (e) {
             stopPropagationAndDefault(e);
 
             hideFolkPicksMobile();
+            $messageContextMenu.addClass('d-none');
 
             //find because current $messageBlock points to message copy in picks wrapper
             scrollToTargetMsg(findMessageBlockById(messageId));
@@ -2446,7 +2508,7 @@ function roomMessageOnContextMenu (e) {
 
     $messageContextMenuCopyButton.off();
     if (!isUserDrawingMessage) {
-        $messageContextMenuCopyButton.on('click', function () {
+        $messageContextMenuCopyButton.on('click', function (e) {
             stopPropagationAndDefault(e);
 
             hideGlobalTransparentOverlay();
@@ -2486,7 +2548,7 @@ function roomMessageOnContextMenu (e) {
     }
 
     $messageContextMenuRespondMessageButton.off();
-    $messageContextMenuRespondMessageButton.on('click', function () {
+    $messageContextMenuRespondMessageButton.on('click', function (e) {
         stopPropagationAndDefault(e);
 
         hideGlobalTransparentOverlay();
@@ -2537,7 +2599,7 @@ function roomMessageOnContextMenu (e) {
 
         if (!isUserDrawingMessage) {
             $messageContextMenuEditButton.removeClass('d-none');
-            $messageContextMenuEditButton.on('click', function () {
+            $messageContextMenuEditButton.on('click', function (e) {
                 stopPropagationAndDefault(e);
 
                 hideGlobalTransparentOverlay();
@@ -2564,7 +2626,7 @@ function roomMessageOnContextMenu (e) {
         $messageContextMenuEditButton.addClass('d-none');
         $messageContextMenuDeleteButton.addClass('d-none');
 
-        $messageContextMenuRespondUserButton.on('click', function () {
+        $messageContextMenuRespondUserButton.on('click', function (e) {
             stopPropagationAndDefault(e);
 
             hideGlobalTransparentOverlay();
@@ -2578,7 +2640,12 @@ function roomMessageOnContextMenu (e) {
         });
     }
 
-    $messageBlock.append($messageContextMenu);
+    //for desktop - position relative to message block, for mobile - middle of screen
+    if (!isMobileClientDevice) {
+        $messageBlock.append($messageContextMenu);
+    } else {
+        $body.append($messageContextMenu);
+    }
 
     $messageContextMenu.removeClass('d-none');
 
@@ -2941,7 +3008,7 @@ function startMessageTextSelectionMode ($messageBlock) {
     messageTextSelectionInProgressId = parseInt($messageBlock.attr('data-msg-id'));
     messageTextSelectionInProgressIsFolkPick = !!$messageBlock.closest('.picks-messages-wr').length;
 
-    $messageBlock.off('contextmenu');
+    $messageBlock.off('contextmenu touchstart touchmove touchend');
 
     $messageBlock.addClass('text-selection-active');
 
@@ -3046,6 +3113,8 @@ function startMessageTextSelectionMode ($messageBlock) {
 
 function cancelMessageTextSelectionMode ($messageBlock, animateControls) {
     if (messageTextSelectionInProgressId) {
+        clearTextSelection();
+
         if (!$messageBlock || !$messageBlock.length) {
             //for desktop its possible to select text inside folk picks messages
             $messageBlock = messageTextSelectionInProgressIsFolkPick
@@ -3061,8 +3130,7 @@ function cancelMessageTextSelectionMode ($messageBlock, animateControls) {
 
         messageTextSelectionInProgressIsFolkPick = false;
 
-        $messageBlock.off('contextmenu');
-        $messageBlock.on('contextmenu', roomMessageOnContextMenu);
+        attachLongTouchContextMenuToElement($messageBlock);
 
         $messageBlock.removeClass('text-selection-active');
 
@@ -3918,11 +3986,23 @@ function onBotConfigChanged (e) {
     LOCAL_STORAGE.setItem(BOTS_LIST_LOCAL_STORAGE_KEY, JSON.stringify(clientBotsCluster));
 }
 
-function onBotDeleteClick(e) {
+function onBotDeleteClick (e) {
     const $botBlock = $(e.currentTarget).closest('.bots-list-item-wr');
     const botId = $botBlock.attr('data-bot-id');
 
     deleteUserBotFromCluster(botId);
 
     $botBlock.remove();
+}
+
+function clearTextSelection () {
+    if (window.getSelection) {
+        if (window.getSelection().empty) {  // Chrome
+            window.getSelection().empty();
+        } else if (window.getSelection().removeAllRanges) {  // Firefox
+            window.getSelection().removeAllRanges();
+        }
+    } else if (document.selection) {  // IE
+        document.selection.empty();
+    }
 }

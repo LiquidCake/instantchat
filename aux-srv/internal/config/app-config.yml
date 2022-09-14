@@ -1,7 +1,5 @@
-#for local setup - set
+#for local deployment with single backend instnce - set
 # - backend1:8080
-# - backend2:8080
-# - backend3:8080
 backendInstances:
   - 192.168.1.101:8080
   - 192.168.1.102:8080

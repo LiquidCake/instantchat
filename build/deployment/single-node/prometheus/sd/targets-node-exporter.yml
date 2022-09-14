@@ -1,0 +1,6 @@
+---
+- targets:
+  - host-backend1:9100 #assuming single-node config so all services are on this node
+  labels:
+    env: prod
+    job: node-exporter

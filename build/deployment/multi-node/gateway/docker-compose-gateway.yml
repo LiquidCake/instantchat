@@ -1,5 +1,8 @@
 version: "3.2"
 
+volumes:
+  file-srv-files:
+
 services:
   nginx:
     image: nginx
@@ -76,6 +79,3 @@ services:
       driver: "json-file"
       options:
         max-size: "5m"
-
-volumes:
-  file-srv-files:

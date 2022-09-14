@@ -1,0 +1,154 @@
+version: "3.2"
+
+volumes:
+  file-srv-files:
+  prometheus_data: {}
+  grafana_data: {}
+
+networks:
+  monitor-net:
+    driver: bridge
+
+services:
+  aux-srv:
+    image: aux-srv
+    restart: always
+    environment:
+      - LOG_LEVEL=INFO
+      #- LOG_LEVEL=TRACE
+      - LOG_FILE_NAME=aux-srv.log
+    ports:
+      - '8090:8080'
+    volumes:
+      - type: bind
+        source: /var/log/aux-srv
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  file-srv:
+    image: file-srv
+    restart: always
+    environment:
+      - LOG_LEVEL=INFO
+      #- LOG_LEVEL=TRACE
+      - LOG_FILE_NAME=file-srv.log
+    ports:
+      - '8085:8085'
+    volumes:
+      - type: volume
+        source: file-srv-files
+        target: /var/file-srv/uploaded-files/
+      - type: bind
+        source: /var/log/file-srv
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  backend1:
+    image: backend
+    restart: always
+    environment:
+      - INSTANCE_NUM=1
+      - LOG_LEVEL=INFO
+      #- LOG_LEVEL=TRACE
+      - LOG_FILE_NAME=backend-1.log
+    ports:
+      - '8080:8080'
+    volumes:
+      - type: bind
+        source: /var/log/backend
+        target: /app/logs
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  nginx:
+    image: nginx
+    restart: always
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - type: bind
+        source: /var/log/nginx
+        target: /var/log/nginx
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  node-exporter:
+    image: prom/node-exporter:v0.18.1
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    restart: unless-stopped
+    ports:
+      - 9100:9100
+    labels:
+      org.label-schema.group: "monitoring"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+
+  prometheus:
+    image: prom/prometheus:v2.10.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=168h'
+      - '--web.enable-lifecycle'
+    extra_hosts:
+      - "host-backend1:192.168.1.100" #assuming single-node config so all services are on this node
+    restart: unless-stopped
+    expose:
+      - 9090
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
+
+  grafana:
+    image: grafana/grafana:6.2.5
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/datasources:/etc/grafana/datasources
+      - ./grafana/dashboards:/etc/grafana/dashboards
+      - ./grafana/setup.sh:/setup.sh
+    entrypoint: /setup.sh
+    environment:
+      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_METRICS_ENABLED=false
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+    networks:
+      - monitor-net
+    labels:
+      org.label-schema.group: "monitoring"
