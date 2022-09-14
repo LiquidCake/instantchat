@@ -12,7 +12,7 @@ Room will have only up to X (1000) messages and after that begin to erase old me
 
 Service is written in GO (backend) and jquery (frontend)
 
-GUI is adaptive, crossbrowser and crossplatform (with EXCEPTION to IOS currently as i don't have a devices - tap behaviour seems to be not captured by js correctly)
+GUI is adaptive, crossbrowser and crossplatform
 
 Includes base monitoring (Grafana/Prometheus)
 
