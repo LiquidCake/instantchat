@@ -88,6 +88,7 @@ Also - ONLY if services like aux-srv are deployed separately from nginx, instead
 set local machine IP and local docker's internal backend service address in config files:
 ```
 set local machine IP to 'allowedOrigins' in /instantchat/backend/internal/config/app-config.yml
+set local machine IP to 'domainDev' in /instantchat/aux-srv/internal/config/app-config.yml
 set 'backend1' to 'backendInstances' in /instantchat/aux-srv/internal/config/app-config.yml
 ```
 
