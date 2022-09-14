@@ -85,11 +85,14 @@ set 'extra_hosts' at
 Also - ONLY if services like aux-srv are deployed separately from nginx, instead of deploying them together as 'gateway' node - set service addresses in nginx.conf (```/instantchat/build/deployment/multi-node/nginx/conf/nginx.conf```)
 
 ## Build / Run locally:
+#### for a local run - set following configuration
 set local machine IP and local docker's internal backend service address in config files:
 ```
-set 'backend1' to 'backendInstances' in /instantchat/aux-srv/internal/config/app-config.yml
 set local machine IP to 'allowedOrigins' in /instantchat/backend/internal/config/app-config.yml
+set 'backend1' to 'backendInstances' in /instantchat/aux-srv/internal/config/app-config.yml
 ```
+
+#### build
 
 On a Linux machine (or WSL) with GO compiler and docker installed, run in project root:
 
