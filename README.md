@@ -245,7 +245,9 @@ So monitoring configurations mut be applied to these copies of files and compose
 
 
 ## How to add new backend node:
-#### (backends cluster scaling)
+#### (backends cluster scaling for a Multi-node deployment)
+
+`Currently everything is done manually`
 
 a) prepare compose file docker-compose-backend-XXX.yml (copy existing one)
 
