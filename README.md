@@ -16,8 +16,7 @@ GUI is adaptive, crossbrowser and crossplatform
 
 Includes base monitoring (Grafana/Prometheus)
 
-
-![screenshot1](https://user-images.githubusercontent.com/9273621/152684403-41758f22-037e-43b7-854c-461e0ed463ed.png)
+![152684403-41758f22-037e-43b7-854c-461e0ed463ed](https://user-images.githubusercontent.com/9273621/190246233-27dd3b8b-8038-473e-9a7f-435aa4423026.png)
 
 ####
 
