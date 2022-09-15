@@ -798,9 +798,17 @@ ul.header-right.navbar-nav>li {
   margin-bottom: 0.5rem;
 }
 
+.share-room-btns-wr {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  max-width: 18rem;
+  margin: auto;
+}
+
 .share-room-btn {
-  display: block;
-  width: 3.5rem;
+  display: inline-block;
   padding: 0.4rem 0.5rem;
   margin-left: auto;
   margin-right: auto;
