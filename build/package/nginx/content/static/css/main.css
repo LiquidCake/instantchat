@@ -1503,10 +1503,6 @@ a.recent-room-title {
   color: #c3cd2feb;
 }
 
-#message-tooltip-respond-message {
-  margin-top: 1rem;
-}
-
 #message-tooltip-delete {
   color: #bababa;
 }
@@ -1967,10 +1963,6 @@ a.message-highlight-link:hover {
   scrollbar-width: thin;
   max-height: calc(100% - 80px);
   box-shadow: 0px 3px 9px -3px #81b597;
-}
-
-#bots-list-wr {
-
 }
 
 .bots-list-item-wr {
@@ -3226,6 +3218,10 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
 
   #recent-rooms-wr {
     padding: 0.3rem;
+  }
+
+  #bots-list-wr {
+    padding: 0.5rem;
   }
 
   .page-home-container-main-center-wr {

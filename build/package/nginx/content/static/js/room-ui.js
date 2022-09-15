@@ -449,16 +449,7 @@ function initRoomPageUI () {
         }
     });
 
-    $mainOverlay.on('click', function () {
-        $messageContextMenu.addClass('d-none');
-        hideFolkPicksMobile();
-        hideMenuMobile();
-        hideMyRecentRoomsPopup();
-        hideShareRoomPopup();
-        hideUserInputDrawingBlock();
-        hideBotsUI();
-        //main overlay will be hidden as a result of one of above actions, so no need to hide it explicitly
-    });
+    bindMainOverlay();
 
 
     /* Set Recent rooms toggle behaviour */
@@ -1862,4 +1853,21 @@ function isSwipedOnRoomChangeInput () {
 
 function showVersionChangedSpinner () {
     $spinnerOverlayVersionChangedWr.removeClass('d-none');
+}
+
+function unBindMainOverlay () {
+    $mainOverlay.off('click');
+}
+
+function bindMainOverlay () {
+    $mainOverlay.on('click', function () {
+        $messageContextMenu.addClass('d-none');
+        hideFolkPicksMobile();
+        hideMenuMobile();
+        hideMyRecentRoomsPopup();
+        hideShareRoomPopup();
+        hideUserInputDrawingBlock();
+        hideBotsUI();
+        //main overlay will be hidden as a result of one of above actions, so no need to hide it explicitly
+    });
 }

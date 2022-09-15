@@ -234,7 +234,7 @@ public class TestUser {
             }
 
             Util.sleep(
-                    new Random().nextInt(Constants.SEND_MESSAGE_DELAY_MS) + 500
+                    new Random().nextInt(Constants.SEND_MESSAGE_DELAY_MS) + 2000
             );
         }
 

@@ -2492,8 +2492,6 @@ function roomMessageOnContextMenu (e) {
     if (isMobileClientDevice && !isMessageInFolkPicks && !isUserDrawingMessage) {
         $messageContextMenuSelectButton.removeClass('d-none');
 
-        const selectedText = getSelectionText();
-
         $messageContextMenuSelectButton.on('click', function (e) {
             stopPropagationAndDefault(e);
 
@@ -2501,6 +2499,8 @@ function roomMessageOnContextMenu (e) {
             $messageContextMenu.addClass('d-none');
 
             startMessageTextSelectionMode($messageBlock);
+
+            clearTextSelection();
         });
     } else {
         $messageContextMenuSelectButton.addClass('d-none');
