@@ -2382,6 +2382,7 @@ a.message-highlight-link.message-link-preview:hover {
 
 .home-central-row {
   text-align: center;
+  padding-top: 2.5rem;
 }
 
 .room-form-join-create {
@@ -2437,11 +2438,8 @@ a.message-highlight-link.message-link-preview:hover {
   margin-top: 1rem;
 }
 
-.page-home-slogan-wr {
-  text-align: center;
-  margin-top: 3rem;
-  margin-bottom: 4.5rem;
-  font-style: italic;
+.page-about-descr .font-weight-bold {
+  color: #008000;
 }
 
 .page-home-room-form-wr {
@@ -2592,7 +2590,7 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
   margin-top: 0.8rem;
   margin-bottom: 1.5rem;
   text-align: center;
-  font-size: 2.5rem;
+  font-size: 2.3rem;
   text-shadow: 0.001rem 0.01rem 0.07rem #ccc;
 }
 
@@ -2601,7 +2599,7 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
 }
 
 .page-about-descr p {
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.5rem;
   font-size: 1.1rem;
 }
 
@@ -2925,10 +2923,6 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
     width: 60%;
   }
 
-  .page-home-slogan-wr {
-    margin-bottom: 4rem;
-  }
-
   .container-main-center-wr {
     box-shadow: none;
   }
@@ -3072,10 +3066,6 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
     width: 75%;
   }
 
-  .page-home-slogan-wr {
-    margin-bottom: 3.5rem;
-  }
-
   .room-msg-name-anon {
     line-height: 1.1rem;
     padding: 1px;
@@ -3196,6 +3186,10 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
   .page-room-empty-picks-descr2 {
     font-size: 0.9rem;
   }
+
+  .home-central-row {
+    padding-top: 2rem;
+  }
 }
 
 @media (max-width: 560px) {
@@ -3244,10 +3238,6 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
 
   .page-home-room-form-wr {
     width: 80%;
-  }
-
-  .page-home-slogan-wr {
-    margin-bottom: 2.5rem;
   }
 
   .page-about-descr p {
@@ -3331,7 +3321,6 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
   }
 
   .page-about-descr p {
-    margin-bottom: 0.2rem;
     font-size: 0.8rem;
   }
 
@@ -3427,10 +3416,6 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
     font-size: 0.8rem;
   }
 
-  .page-home-slogan-wr {
-    margin-bottom: 1.5rem;
-  }
-
   .room-msg-text, .room-msg-name-val {
     font-size: 0.7rem;
   }
@@ -3506,6 +3491,10 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
 
   .home-common-room-suggestions-title {
     font-size: 0.8rem;
+  }
+
+  .home-central-row {
+    padding-top: 1.5rem;
   }
 }
 
@@ -3604,11 +3593,6 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
 }
 
 @media (max-height: 800px) {
-  .page-home-container, .page-home-container-row, .page-home-main-wr, .page-home-container-main,
-  .page-home-container-main-row, .page-home-container-main-center-wr, .page-home-picks-wr {
-    height: auto;
-  }
-
   .room-info-block {
     padding-top: 0;
   }
@@ -3623,6 +3607,11 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
 }
 
 @media (max-height: 700px) {
+  .page-home-container, .page-home-container-row, .page-home-main-wr, .page-home-container-main,
+  .page-home-container-main-row, .page-home-container-main-center-wr, .page-home-picks-wr {
+    height: auto;
+  }
+
   .bots-add-new-bnt {
     margin-top: 1.5rem;
   }

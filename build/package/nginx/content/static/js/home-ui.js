@@ -39,6 +39,12 @@ function initHomePageUI () {
         hideMyRecentRoomsPopup();
     });
 
+    $document.on('keydown', function(e) {
+        if (e.which === KEY_CODE_ESCAPE) {
+            hideMyRecentRoomsPopup();
+        }
+    });
+
     const xwiper = new Xwiper(document);
     xwiper.onSwipeRight(showMenuMobileOnSwipe);
 }

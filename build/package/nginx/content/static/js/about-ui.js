@@ -49,6 +49,12 @@ function initAboutPageUI () {
 
         redirectToURL("/");
     });
+
+    $document.on('keydown', function(e) {
+        if (e.which === KEY_CODE_ESCAPE) {
+            hideMyRecentRoomsPopup();
+        }
+    });
 }
 
 function onResizeDelayedFunc () {
