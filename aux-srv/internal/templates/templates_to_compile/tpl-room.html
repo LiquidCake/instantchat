@@ -321,13 +321,7 @@
 
 		<div class="share-room-wr">
 			<p class="share-room-text">just send room link to people. Click on the button to copy room URL to clipboard</p>
-			<div class="share-room-btns-wr">
-				<a class="share-room-btn share-room-btn-copy" href="javascript:void(0);">copy</a>
-				<a href="javascript:void(0);" title="share room" class="share-room-btn share-room-btn-share">
-					share
-					<img src="/static/${BUILD_VERSION}/img/share-2.svg" alt="share" />
-				</a>
-			</div>
+			<a class="share-room-btn" href="javascript:void(0);">COPY</a>
 			<p class="share-room-copied-alert">Link is copied to your clipboard!</p>
 			<p class="share-room-manual-text">or here it is for manual copying:</p>
 			<p class="share-room-manual-url">{{.httpSchema}}://{{.domain}}/{{.requestedRoom}}</p>
@@ -693,7 +687,6 @@
 	const BUILD_NUMBER = "${BUILD_VERSION}";    //placeholder is replaced by assistant util
 	const HTTP_SCHEMA = "{{.httpSchema}}";    //placeholder is set by go html templating
 	const ROOM_NAME = formatRoomNameInput("{{.requestedRoom}}");
-	const ROOM_TITLE = "{{.requestedRoom}} - Instantchat";
 	const backendError = "{{.error}}";
 
 	if (backendError) {

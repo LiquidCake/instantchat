@@ -131,8 +131,7 @@ const $userJoinedAsChangeLink = $('#user-message-joined-as-change-link');
 const $messageEditCancelButton = $('.message-edit-cancel');
 
 const $shareRoomWr = $('.share-room-wr');
-const $shareRoomBtnCopy = $('.share-room-btn-copy');
-const $shareRoomBtnShare = $('.share-room-btn-share');
+const $shareRoomBtn = $('.share-room-btn');
 const $shareRoomAlert = $('.share-room-copied-alert');
 const $shareRoomManualURL = $('.share-room-manual-url');
 const $shareRoomHasPassword = $('.share-room-has-password');
@@ -545,13 +544,22 @@ function initRoomPageUI () {
     /* Setup share behaviour */
 
     $roomInfoShareRoomBtn.on('click', function () {
-        $shareRoomWr.css('display', 'block');
-        showMainOverlay();
+        if (isMobileClientDevice && navigator.share) {
+            navigator.share({
+                title: ROOM_NAME + ' - Instantchat',
+                url: $shareRoomManualURL.text()
+
+            }).catch(function () {
+                $shareRoomWr.css('display', 'block');
+                showMainOverlay();
+            });
+        } else {
+            $shareRoomWr.css('display', 'block');
+            showMainOverlay();
+        }
     });
 
-    $shareRoomBtnCopy.on('click', copyRoomFastLink);
-
-    $shareRoomBtnShare.on('click', shareRoomViaNavigatorShare);
+    $shareRoomBtn.on('click', copyRoomFastLink);
 
     $roomInfoDescriptionCreatorChangeInput.on('focusin', function () {
         $roomInfoDescription.css('border-color', '#3b3b3b');
@@ -945,17 +953,6 @@ function copyRoomFastLink () {
             showError(ERROR_NOTIFICATION_TEXT_FAILED_COPY_URL_TO_CLIPBOARD);
         }
     );
-}
-
-function shareRoomViaNavigatorShare () {
-    if (navigator.share) {
-        const roomUrl = $shareRoomManualURL.text();
-
-        navigator.share({
-            text: ROOM_TITLE,
-            url: roomUrl
-        })
-    }
 }
 
 function copyStringToClipboard (strToCopy, successCallback, errorCallback) {
