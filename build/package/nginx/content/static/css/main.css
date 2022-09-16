@@ -3607,11 +3607,6 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
 }
 
 @media (max-height: 700px) {
-  .page-home-container, .page-home-container-row, .page-home-main-wr, .page-home-container-main,
-  .page-home-container-main-row, .page-home-container-main-center-wr, .page-home-picks-wr {
-    height: auto;
-  }
-
   .bots-add-new-bnt {
     margin-top: 1.5rem;
   }
@@ -3627,6 +3622,14 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
 
   .user-message-joined-as {
     margin-top: 0.45rem;
+  }
+}
+
+@media (max-height: 650px) {
+  /* will have to put this on different max-height breakpoint if effective height of home page content changes */
+  .page-home-container, .page-home-container-row, .page-home-main-wr, .page-home-container-main,
+  .page-home-container-main-row, .page-home-container-main-center-wr, .page-home-picks-wr {
+    height: auto;
   }
 }
 
