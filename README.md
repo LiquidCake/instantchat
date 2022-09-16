@@ -71,25 +71,25 @@ Set node addresses, domain etc.
 
 config files:
 ```
-/instantchat/aux-srv/internal/config/app-config.yml
-/instantchat/backend/internal/config/app-config.yml
+instantchat/aux-srv/internal/config/app-config.yml
+instantchat/backend/internal/config/app-config.yml
 ```
 
 set 'extra_hosts' at
 
-```/instantchat/build/deployment/multi-node/monitoring/docker-compose-monitoring.yml```
+```instantchat/build/deployment/multi-node/monitoring/docker-compose-monitoring.yml```
 
-(or ```/instantchat/build/deployment/single-node/docker-compose-single-node.yml```)
+(or ```instantchat/build/deployment/single-node/docker-compose-single-node.yml```)
 
-Also - ONLY if services like aux-srv are deployed separately from nginx, instead of deploying them together as 'gateway' node - set service addresses in nginx.conf (```/instantchat/build/deployment/multi-node/nginx/conf/nginx.conf```)
+Also - ONLY if services like aux-srv are deployed separately from nginx, instead of deploying them together as 'gateway' node - set service addresses in nginx.conf (```instantchat/build/deployment/multi-node/nginx/conf/nginx.conf```)
 
 ## Build / Run locally:
 #### for a local run - set following configuration
 set local machine IP and local docker's internal backend service address in config files:
 ```
-set local machine IP to 'allowedOrigins' in /instantchat/backend/internal/config/app-config.yml
-set local machine IP to 'domainDev' in /instantchat/aux-srv/internal/config/app-config.yml
-set 'backend1' to 'backendInstances' in /instantchat/aux-srv/internal/config/app-config.yml
+set local machine IP to 'allowedOrigins' in instantchat/backend/internal/config/app-config.yml
+set local machine IP to 'domainDev'      in instantchat/aux-srv/internal/config/app-config.yml
+set 'backend1' to 'backendInstances'     in instantchat/aux-srv/internal/config/app-config.yml
 ```
 
 #### build
@@ -98,9 +98,9 @@ On a Linux machine (or WSL) with GO compiler and docker installed, run in projec
 
 Run ```./rebuild-docker.sh dev``` (or ```prod``` instead of ```dev``` to use 'prod' versions of app properties in ```app-config.yml```)
 
-This will build all images and start them in local docker (using unified docker file for local deployment - ```/instantchat/build/package/docker-compose-local-unified.yml```)
+This will build all images and start them in local docker (using unified docker file for local deployment - ```instantchat/build/package/docker-compose-local-unified.yml```)
 
-(start / stop manually with ```docker-compose -f /instantchat/build/package/docker-compose-local-unified.yml up```)
+(start / stop manually with ```docker-compose -f instantchat/build/package/docker-compose-local-unified.yml up```)
 
 Thats it, images are ready to be deployed to server nodes and also service is up locally
 
@@ -129,17 +129,17 @@ usermod -aG sudo instantchat
 
 ###### execute on build machine
 ```
-scp /instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.100:/home/instantchat
-scp /instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.101:/home/instantchat
-scp /instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.102:/home/instantchat
-scp /instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.103:/home/instantchat
-scp /instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.255:/home/instantchat
+scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.100:/home/instantchat
+scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.101:/home/instantchat
+scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.102:/home/instantchat
+scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.103:/home/instantchat
+scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.255:/home/instantchat
 
-scp /instantchat/build/deployment/multi-node/gateway/init-gateway.sh instantchat@192.168.1.100:/home/instantchat
+scp instantchat/build/deployment/multi-node/gateway/init-gateway.sh instantchat@192.168.1.100:/home/instantchat
 
-scp /instantchat/build/deployment/multi-node/backend/init-backend.sh instantchat@192.168.1.101:/home/instantchat
-scp /instantchat/build/deployment/multi-node/backend/init-backend.sh instantchat@192.168.1.102:/home/instantchat
-scp /instantchat/build/deployment/multi-node/backend/init-backend.sh instantchat@192.168.1.103:/home/instantchat
+scp instantchat/build/deployment/multi-node/backend/init-backend.sh instantchat@192.168.1.101:/home/instantchat
+scp instantchat/build/deployment/multi-node/backend/init-backend.sh instantchat@192.168.1.102:/home/instantchat
+scp instantchat/build/deployment/multi-node/backend/init-backend.sh instantchat@192.168.1.103:/home/instantchat
 ```
 
 #### execute on all server nodes
@@ -163,11 +163,11 @@ init node-specific configs
 
 #### execute on build machine
 ```
-scp /instantchat/build/deployment/multi-node/gateway/docker-compose-gateway.yml instantchat@192.168.1.100:/home/instantchat
+scp instantchat/build/deployment/multi-node/gateway/docker-compose-gateway.yml instantchat@192.168.1.100:/home/instantchat
 
-scp /instantchat/build/deployment/multi-node/backend/docker-compose-backend-1.yml instantchat@192.168.1.101:/home/instantchat
-scp /instantchat/build/deployment/multi-node/backend/docker-compose-backend-2.yml instantchat@192.168.1.102:/home/instantchat
-scp /instantchat/build/deployment/multi-node/backend/docker-compose-backend-3.yml instantchat@192.168.1.103:/home/instantchat
+scp instantchat/build/deployment/multi-node/backend/docker-compose-backend-1.yml instantchat@192.168.1.101:/home/instantchat
+scp instantchat/build/deployment/multi-node/backend/docker-compose-backend-2.yml instantchat@192.168.1.102:/home/instantchat
+scp instantchat/build/deployment/multi-node/backend/docker-compose-backend-3.yml instantchat@192.168.1.103:/home/instantchat
 ```
 
 ### 3. Deploy images 
@@ -225,15 +225,15 @@ sudo docker load -i file-srv-latest.tar
 
 #### execute on build machine
 ```
-scp /instantchat/build/deployment/multi-node/monitoring/docker-compose-monitoring.yml instantchat@192.168.1.255:/home/instantchat
+scp instantchat/build/deployment/multi-node/monitoring/docker-compose-monitoring.yml instantchat@192.168.1.255:/home/instantchat
 
-scp -r /instantchat/build/deployment/multi-node/monitoring/prometheus/ instantchat@192.168.1.255:/home/instantchat
-scp -r /instantchat/build/deployment/multi-node/monitoring/grafana/ instantchat@192.168.1.255:/home/instantchat
+scp -r instantchat/build/deployment/multi-node/monitoring/prometheus/ instantchat@192.168.1.255:/home/instantchat
+scp -r instantchat/build/deployment/multi-node/monitoring/grafana/ instantchat@192.168.1.255:/home/instantchat
 ```
 
 Note: grafana dashboards are not imported automatically, so import manually via GUI. 
 
-Dashboard files are located at ````/instantchat/build/deployment/multi-node/monitoring/grafana/dashboards````
+Dashboard files are located at ```instantchat/build/deployment/multi-node/monitoring/grafana/dashboards```
 
 ### 5. Run docker on remote servers
 On each server - run ```docker-compose -f /home/instantchat/docker-compose-{node_specific_file_name} up```
@@ -278,8 +278,8 @@ e) re-deploy monitoring node (see above)
 ### Configuration
 Configs are set in:
 ```
-/instantchat/load-testing/test_client/src/main/java/main/util/Constants.java
-/instantchat/load-testing/test_client/src/main/java/main/Main.java
+instantchat/load-testing/test_client/src/main/java/main/util/Constants.java
+instantchat/load-testing/test_client/src/main/java/main/Main.java
 ```
 
 #### Run
