@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"instantchat.rooms/instantchat/aux-srv/internal/load-balancing"
+	"instantchat.rooms/instantchat/aux-srv/internal/load_balancing"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
