@@ -246,7 +246,7 @@ public class TestRoom {
         wsHeaders.put("Cookie", String.format("%s=%s; ", Constants.USER_SESSION_COOKIE_NAME, userSessionToken));
 
         MyWebSocketClient wsClient = new MyWebSocketClient(
-                new URI(Constants.WS_ENDPOINT + roomBackendInstance),
+                new URI(Constants.WS_PROTOCOL + roomBackendInstance + Constants.WS_ENDPOINT),
                 new Draft_6455(),
                 wsHeaders,
                 Constants.SOCKET_TIMEOUT_MS,

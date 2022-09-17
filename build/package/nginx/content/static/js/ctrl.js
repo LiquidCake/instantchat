@@ -1,6 +1,8 @@
 
 const URL_PARAMS = new URLSearchParams(window.location.search);
 
+const URL_PARAM_BACKEND_HOST = 'backendHost';
+
 let output;
 let input;
 
@@ -166,7 +168,7 @@ function initWebSocket () {
         ws.close(WS_CLOSE_CODE_NORMAL);
     }
 
-    ws = new WebSocket(WS_ENDPOINT + '?' + URL_PARAM_BACKEND_HOST + '=' + URL_PARAMS.get(URL_PARAM_BACKEND_HOST));
+    ws = new WebSocket(WS_PROTOCOL + URL_PARAMS.get(URL_PARAM_BACKEND_HOST) + "/ws_entry");
 
     applyCallbacks();
 }
@@ -340,7 +342,7 @@ function onManualSend () {
 
 function onChangeBackend () {
     const updatedQueryStr = replaceQueryParam(
-        'backendHost',
+        URL_PARAM_BACKEND_HOST,
         document.getElementById("backend_instance_host").value,
         window.location.search
     );

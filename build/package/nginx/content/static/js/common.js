@@ -36,11 +36,8 @@ const GET_URL_PREVIEW_ENDPOINT = "./get_url_preview";
 const GET_TEXT_FILE_ENDPOINT = "./get_text_file";
 const UPLOAD_TEXT_FILE_ENDPOINT = "./upload_text_file";
 
-const URL_PARAM_BACKEND_HOST = 'backendHost';
+const WS_PROTOCOL = location.protocol.startsWith("https") ? "wss://" : "ws://";
 
-const protocol = location.protocol.startsWith("https") ? "wss://" : "ws://";
-
-const WS_ENDPOINT = protocol + location.host + "/ws_entry";
 const WS_CLOSE_CODE_NORMAL = 1000;
 
 const KEEP_ALIVE_BEACON = JSON.stringify({kA: "OK"});

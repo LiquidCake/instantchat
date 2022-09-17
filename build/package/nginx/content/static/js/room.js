@@ -549,7 +549,7 @@ function initRoomPageWebSocket (roomName, backendInstanceAddr, alternativeRoomNa
     closeWsIfExists();
 
     try {
-        ws = new WebSocket(WS_ENDPOINT + '?' + URL_PARAM_BACKEND_HOST + '=' + backendInstanceAddr);
+        ws = new WebSocket(WS_PROTOCOL + backendInstanceAddr + "/ws_entry");
     } catch (ex) {
         redirectToHomePageWithError(ROOM_TO_HOME_PG_REDIRECT_ERROR_CONNECTION);
         return;

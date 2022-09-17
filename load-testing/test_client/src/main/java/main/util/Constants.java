@@ -13,7 +13,7 @@ public class Constants {
 
     public static final String AUX_SRV_PICK_BACKEND_ENDPOINT = HTTP_PROTOCOL + SERVER_ROOT_ADDR + "/pick_backend?roomName=";
 
-    public static final String WS_ENDPOINT = WS_PROTOCOL + SERVER_ROOT_ADDR + "/ws_entry?backendHost=";
+    public static final String WS_ENDPOINT = "/ws_entry";
 
     public static final String ROOM_PASSWORD = "123qwe_SOME$!%";
     public static final String USER_SESSION_COOKIE_NAME = "session";

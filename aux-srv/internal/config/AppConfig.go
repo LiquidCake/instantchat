@@ -28,8 +28,7 @@ type AppConfigList struct {
 		IsSecure       bool        `yaml:"isSecure"`
 	} `yaml:"cookiesDev"`
 
-	DomainProd string `yaml:"domainProd"`
-	DomainDev string `yaml:"domainDev"`
+	Domain string `yaml:"domain"`
 
 	MainHttpSchemaProd string `yaml:"mainHttpSchemaProd"`
 	MainHttpSchemaDev string `yaml:"mainHttpSchemaDev"`

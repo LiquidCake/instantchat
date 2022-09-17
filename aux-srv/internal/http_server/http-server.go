@@ -5,13 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"instantchat.rooms/instantchat/aux-srv/internal/load_balancing"
-	"github.com/google/uuid"
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gopkg.in/natefinch/lumberjack.v2"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,6 +17,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"gopkg.in/yaml.v2"
+
+  "instantchat.rooms/instantchat/aux-srv/internal/load_balancing"
 	"instantchat.rooms/instantchat/aux-srv/internal/config"
 	"instantchat.rooms/instantchat/aux-srv/internal/templates"
 	"instantchat.rooms/instantchat/aux-srv/internal/util"
@@ -402,14 +403,14 @@ func loadAppConfigs() {
 	LogMaxFileAgeDays = config.AppConfig.Logging.LogMaxFileAgeDays
 
 	if EnvType == "prod" {
-		Domain = config.AppConfig.DomainProd
 		HttpSchema = config.AppConfig.MainHttpSchemaProd
 		CookiesIsSecure = config.AppConfig.CookiesProd.IsSecure
 	} else {
-		Domain = config.AppConfig.DomainDev
 		HttpSchema = config.AppConfig.MainHttpSchemaDev
 		CookiesIsSecure = config.AppConfig.CookiesDev.IsSecure
 	}
+
+	Domain = config.AppConfig.Domain
 
 	CtrlAuthLogin = config.AppConfig.CtrlAuthLogin
 	CtrlAuthPasswd = config.AppConfig.CtrlAuthPasswd

@@ -1,9 +1,10 @@
-#for local deployment with single backend instnce - set
-# - backend1:8080
+#for local deployment with single backend instance - set just local machine IP
 backendInstances:
   - 192.168.1.101:8080
   - 192.168.1.102:8080
   - 192.168.1.103:8080
+
+domain: "192.168.1.100"
 
 backendHttpSchema: "http"
 
@@ -27,6 +28,7 @@ forbiddenRoomNames:
   - dashboards
   - about
   - control_page_proxy
+  - favicon.ico
 
 ctrlAuthLogin: "admin111"
 ctrlAuthPasswd: "password111"
@@ -36,9 +38,6 @@ ctrlAuthPasswd: "password111"
 
 #values: dev / prod
 envType: "dev"
-
-domainProd: "mydomain.com"
-domainDev: "192.168.1.100"
 
 mainHttpSchemaProd: "https"
 mainHttpSchemaDev: "http"

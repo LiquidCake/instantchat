@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"instantchat.rooms/instantchat/backend/internal/domain_structures"
 	"instantchat.rooms/instantchat/backend/internal/metrics"
-	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -17,9 +16,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -149,13 +146,6 @@ func StartServer() {
 /* handlers */
 
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
-	if !checkSameOrigin(r) {
-		http.Error(w, "bad origin", http.StatusForbidden)
-		util.LogSevere("got request from bad origin: '%s'", r.Header["Origin"])
-
-		return
-	}
-
 	engine.WsEntry(w, r)
 }
 
@@ -192,50 +182,17 @@ func hwStatusHandler(w http.ResponseWriter, r *http.Request) {
 
 func ctrlHandler(w http.ResponseWriter, r *http.Request) {
 	var session util.HttpSession
-
-	err := util.GetUserSession(r, &session)
+	errorStr := ""
 
 	util.LogInfo("ctrl page requested. UUID: '%s'", session)
 
+	err := util.GetUserSession(r, &session)
+
 	if err != nil {
-		//create new session cookie
-		sessionUUID, err := uuid.NewUUID()
-
-		if err != nil {
-			util.LogSevere("Failed to generate UUID: '%s'", err)
-
-			renderCtrlPage(w, r, "Internal error")
-
-			return
-		}
-
-		var session = util.HttpSession{
-			SessionUUID: sessionUUID.String(),
-			StartedAt:   time.Now().String(),
-		}
-
-		util.LogInfo("Created new session: '%s', startedAt: '%s'", session.SessionUUID, session.StartedAt)
-
-		newSessionJson, err := json.Marshal(session)
-
-		if err != nil {
-			util.LogSevere("Failed to marshal JSON: '%s'", err)
-
-			renderCtrlPage(w, r, "Internal error")
-
-			return
-		}
-
-		encodedSession := base64.StdEncoding.EncodeToString(newSessionJson)
-
-		http.SetCookie(w, &http.Cookie{
-			Name:  "session",
-			Value: encodedSession,
-			Expires: time.Now().Add(365 * 24 * time.Hour),
-		})
+    errorStr = "ERROR: please get session cookie from home/room page"
 	}
 
-	renderCtrlPage(w, r, "")
+	renderCtrlPage(w, r, errorStr)
 }
 
 func roomsCtrlHandler(w http.ResponseWriter, r *http.Request) {
@@ -437,39 +394,6 @@ func waitForShutdown(srv *http.Server) {
 	util.LogInfo("Shutting down")
 
 	os.Exit(0)
-}
-
-func checkSameOrigin(r *http.Request) bool {
-	origin := r.Header["Origin"]
-	if len(origin) == 0 {
-		return true
-	}
-
-	u, err := url.Parse(origin[0])
-	if err != nil {
-		return false
-	}
-
-	if util.EqualASCIIFold(u.Host, r.Host) {
-		return true
-	}
-
-	defaultPort, ok := defaultPorts[u.Scheme]
-	if !ok {
-		return false
-	}
-
-	host, port, err := net.SplitHostPort(u.Host)
-	if err == nil {
-		return port == defaultPort && util.EqualASCIIFold(host, r.Host)
-	}
-
-	host, port, err = net.SplitHostPort(r.Host)
-	if err == nil {
-		return port == defaultPort && util.EqualASCIIFold(u.Host, host)
-	}
-
-	return false
 }
 
 func loadAppConfigs() {
