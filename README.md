@@ -85,11 +85,11 @@ Also - ONLY if services like aux-srv are deployed separately from nginx, instead
 
 ## Build / Run locally:
 #### for a local run - set following configuration
-set local machine IP and local docker's internal backend service address in config files:
+set local machine IP in config files:
 ```
-set local machine IP to 'allowedOrigins' in instantchat/backend/internal/config/app-config.yml
-set local machine IP to 'domainDev'      in instantchat/aux-srv/internal/config/app-config.yml
-set 'backend1' to 'backendInstances'     in instantchat/aux-srv/internal/config/app-config.yml
+set local machine IP to 'allowedOrigins'    in instantchat/backend/internal/config/app-config.yml
+set local machine IP to 'domain'            in instantchat/aux-srv/internal/config/app-config.yml
+set local machine IP to 'backendInstances'  in instantchat/aux-srv/internal/config/app-config.yml
 ```
 
 #### build
@@ -246,6 +246,9 @@ And there is a sngle file of each kind to configure it (```init-single-node.sh``
 Includes separate copy of grafana+prometheus files, also grafana docker service is declared in a single compose file. 
 So monitoring configurations mut be applied to these copies of files and compose file.
 
+## Admin panell (kind of)
+Simple admin pannel that allows some actions with backends is available at `http://{domain}/control_page_proxy`
+Make sure to change login/password properties in `instantchat/backend/internal/config/app-config.yml`
 
 ## How to add new backend node:
 #### (backends cluster scaling for a Multi-node deployment)
