@@ -248,7 +248,11 @@ So monitoring configurations mut be applied to these copies of files and compose
 
 ## Admin panell (kind of)
 Simple admin pannel that allows some actions with backends is available at `http://{domain}/control_page_proxy`
-Make sure to change login/password properties in `instantchat/backend/internal/config/app-config.yml`
+Make sure to change login/password properties (`ctrlAuthLogin`, `ctrlAuthPasswd`) in:
+```
+instantchat/backend/internal/config/app-config.yml
+instantchat/aux-srv/internal/config/app-config.yml
+```
 
 ## How to add new backend node:
 #### (backends cluster scaling for a Multi-node deployment)
