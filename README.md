@@ -243,7 +243,9 @@ For single-node deployment (all services are on same remote server) - steps are 
 
 And there is a sngle file of each kind to configure it:
 
-### execute on build machine
+### prepare env
+execute on build machine:
+
 ```
 scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.100:/home/instantchat
 
@@ -261,6 +263,24 @@ scp -r instantchat/build/deployment/single-node/grafana/ instantchat@192.168.1.1
 ```
 
 ### upload containers
+execute on build machine:
+
+```
+docker save -o /tmp/nginx-latest.tar nginx:latest && \
+docker save -o /tmp/aux-srv-latest.tar aux-srv:latest && \
+docker save -o /tmp/backend-latest.tar backend:latest
+
+scp /tmp/nginx-latest.tar instantchat@46.175.149.153:/home/instantchat
+scp /tmp/aux-srv-latest.tar instantchat@46.175.149.153:/home/instantchat
+scp /tmp/backend-latest.tar instantchat@46.175.149.153:/home/instantchat
+```
+
+execute on remove node:
+```
+sudo docker load -i nginx-latest.tar && \
+sudo docker load -i aux-srv-latest.tar && \
+sudo docker load -i backend-latest.tar
+```
 
 ### run single docker-compose no remote node
 `docker-compose -f /home/instantchat/docker-compose-single-node.yml up`
