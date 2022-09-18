@@ -239,10 +239,9 @@ Dashboard files are located at ```instantchat/build/deployment/multi-node/monito
 On each server - run ```docker-compose -f /home/instantchat/docker-compose-{node_specific_file_name} up```
 
 ## Single-node deployment
-For single-node deployment (all services are on same remote server) - steps are the same as for `Multi-node deployment in a 'gateway' mode`, except there is only 1 node with a single address - to configure everywhere and to load docker images to.
+For single-node deployment (all services are on same remote server) - steps are the same as for `Multi-node deployment in a 'gateway' mode`, except there is only 1 node with a single address (`192.168.1.100` in below examples) - to configure everywhere and to load docker images to.
 
 And there is a sngle file of each kind to configure it:
-single-node address is considered to be `192.168.1.100` in below examples
 
 ### execute on build machine
 ```
