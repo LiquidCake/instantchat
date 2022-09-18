@@ -239,10 +239,54 @@ Dashboard files are located at ```instantchat/build/deployment/multi-node/monito
 On each server - run ```docker-compose -f /home/instantchat/docker-compose-{node_specific_file_name} up```
 
 ## Single-node deployment
-For single-node deployment (all services are on same remote server) - steps are the same as for `Multi-node deployment in a 'gateway' mode`, except there is only 1 node with a single address - to configure everywhere and to load docker images to.
+For single-node deployment (all services are on same remote server) - steps are the same as for `Multi-node deployment in a 'gateway' mode`, except there is only 1 node with a single address (`192.168.1.100` in below examples) - to configure everywhere and to load docker images to.
 
-And there is a sngle file of each kind to configure it (```init-single-node.sh```, ```docker-compose-single-node.yml```) - see ```/availaunch/build/deployment/single-node/```
+And there is a sngle file of each kind to configure it:
 
+### prepare env
+execute on build machine:
+
+```
+scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.100:/home/instantchat
+
+scp instantchat/build/deployment/single-node/init-single-node.sh instantchat@192.168.1.100:/home/instantchat
+scp instantchat/build/deployment/single-node/docker-compose-single-node.yml instantchat@192.168.1.100:/home/instantchat
+
+scp -r instantchat/build/deployment/single-node/prometheus/ instantchat@192.168.1.100:/home/instantchat
+scp -r instantchat/build/deployment/single-node/grafana/ instantchat@192.168.1.100:/home/instantchat
+```
+
+execute on remote node:
+```
+./env-init-ubuntu.sh
+./init-single-node.sh
+```
+
+### upload containers
+execute on build machine:
+
+```
+docker save -o /tmp/nginx-latest.tar nginx:latest && \
+docker save -o /tmp/aux-srv-latest.tar aux-srv:latest && \
+docker save -o /tmp/backend-latest.tar backend:latest
+
+scp /tmp/nginx-latest.tar instantchat@192.168.1.100:/home/instantchat
+scp /tmp/aux-srv-latest.tar instantchat@192.168.1.100:/home/instantchat
+scp /tmp/backend-latest.tar instantchat@192.168.1.100:/home/instantchat
+```
+
+execute on remove node:
+```
+sudo docker load -i nginx-latest.tar && \
+sudo docker load -i aux-srv-latest.tar && \
+sudo docker load -i backend-latest.tar
+```
+
+### run single docker-compose no remote node
+`docker-compose -f /home/instantchat/docker-compose-single-node.yml up`
+
+### also
+`instantchat/build/deployment/single-node/`
 Includes separate copy of grafana+prometheus files, also grafana docker service is declared in a single compose file. 
 So monitoring configurations mut be applied to these copies of files and compose file.
 
