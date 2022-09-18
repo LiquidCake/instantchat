@@ -34,6 +34,7 @@ let roomHasPassword;
 let userInRoomUUID;
 let roomCreatorUserInRoomUUID;
 let currentUserInfo;
+let serverStatus;
 
 let currentRoomName;
 let isLoggedIn;
@@ -102,6 +103,7 @@ function initializeVariables () {
     userInRoomUUID = null;
     currentUserInfo = null;
     roomCreatorUserInRoomUUID = null;
+    serverStatus = null;
 
     currentRoomName = null;
     isLoggedIn = false;
@@ -1070,6 +1072,14 @@ function processRoomDescriptionChangedCommand (message) {
 
     roomCreatorUserInRoomUUID = message.rCuId;
 
+    //process server status
+    serverStatus = message.sS;
+    if (serverStatus === SERVER_STATUS_SHUTTING_DOWN) {
+      showSystemAlertNotification("server is shutting down for maintenance in a minute, please save your data");
+    } else if (serverStatus === SERVER_STATUS_RESTARTING) {
+      showSystemAlertNotification("server is restarting in a minute, please save your data");
+    }
+
     //for room's creator user and self user - add visual indication to user's messages and nameplates
     for (let msgId in roomMessageIdToDOMElem) {
         const $messageBlock = roomMessageIdToDOMElem[msgId];
@@ -1112,7 +1122,10 @@ function processRoomDescriptionChangedCommand (message) {
     $roomInfoOnlineUsers.find(".room-info-online-user[data-user-id='" + userInRoomUUID + "']")
         .addClass('room-info-user-self');
 
+    const oldRoomDescription = $roomInfoDescriptionText.text();
     const newRoomDescription = message.m[0].t;
+
+    const roomDescriptionChanged = oldRoomDescription !== newRoomDescription;
 
     $roomInfoDescriptionText.text(decodeURIComponent(newRoomDescription));
     $roomInfoDescriptionCreatorChangeInput.val(decodeURIComponent(newRoomDescription));
@@ -1151,7 +1164,7 @@ function processRoomDescriptionChangedCommand (message) {
     }
 
     //notify if this isn't the 1st description load
-    if (isRoomDescriptionLoaded) {
+    if (isRoomDescriptionLoaded && roomDescriptionChanged) {
         showTopNotification("room description changed", TOP_NOTIFICATION_SHOW_MS * 2, true);
     }
 

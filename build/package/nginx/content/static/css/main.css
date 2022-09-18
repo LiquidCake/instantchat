@@ -732,6 +732,10 @@ ul.header-right.navbar-nav>li {
   color: #22b14c;
 }
 
+.room-descr-text {
+  word-break: break-all;
+}
+
 .room-descr-text-empty-wr {
   display: inline-block;
   margin-bottom: 0;
@@ -1138,7 +1142,7 @@ ul.header-right.navbar-nav>li {
   box-shadow: 1px 3px 5px #00000033;
 }
 
-.user-message-wr-error-msg, .user-message-wr-notif-msg, .top-notif-msg {
+.user-message-wr-error-msg, .user-message-wr-notif-msg, .top-notif-msg, .system-alert-notif-msg {
   display: none;
   position: absolute;
   width: 50%;
@@ -1173,6 +1177,12 @@ ul.header-right.navbar-nav>li {
   padding: 0.15rem 1rem;
   z-index: 450;
   top: -7.6rem;
+}
+
+.system-alert-notif-msg {
+  top: 3rem;
+  background-color: red;
+  z-index: 450;
 }
 
 .search-bar-wr {
@@ -3298,7 +3308,7 @@ input.room-form-row:focus, input.room-form-row:focus-visible {
     width: 35%;
   }
 
-  .user-message-wr-error-msg, .user-message-wr-notif-msg, .top-notif-msg {
+  .user-message-wr-error-msg, .user-message-wr-notif-msg, .top-notif-msg, .system-alert-notif-msg {
     width: 90%;
   }
 }

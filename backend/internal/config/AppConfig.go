@@ -22,6 +22,9 @@ type AppConfigList struct {
 
 	CtrlAuthLogin string `yaml:"ctrlAuthLogin"`
 	CtrlAuthPasswd string `yaml:"ctrlAuthPasswd"`
+
+  Domain     string `yaml:"domain"`
+  HttpSchema string `yaml:"httpSchema"`
 }
 
 var AppConfig AppConfigList

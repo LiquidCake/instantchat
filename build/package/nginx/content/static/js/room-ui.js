@@ -34,6 +34,7 @@ const $roomTitleLinkChangeInput = $roomTitleContentWr.find('.room-title-link-cha
 const $roomTitleLinkChangeLinks = $('.room-title-link-change-link');
 
 const $topNotifBlock = $('.top-notif-msg');
+const $systemAlertNotifBlock = $('.system-alert-notif-msg');
 
 const $messageContextMenu = $('.message-context-menu');
 const $messageContextMenuEditButton = $messageContextMenu.find('#message-tooltip-edit');
@@ -1068,7 +1069,7 @@ function showNotification(message, notificationShowTimeMs) {
 }
 
 /*
-* 2nd notification type, drawn on top of room title - for less important events
+* 2nd notification type - for less important events
 * */
 function showTopNotification(message, notificationShowTimeMs, showNow) {
     if ($topNotifBlock.css('display') === 'block' && !showNow) {
@@ -1092,6 +1093,16 @@ function showTopNotification(message, notificationShowTimeMs, showNow) {
 
         }, notificationShowTimeMs);
     }
+}
+
+/*
+* 3rd notification type - for system alerts
+* */
+function showSystemAlertNotification(message) {
+    $systemAlertNotifBlock.text(message);
+    $systemAlertNotifBlock.css('background-color', '#fff');
+    $systemAlertNotifBlock.css('display', 'block');
+    $systemAlertNotifBlock.animate({backgroundColor: "red"}, 500);
 }
 
 function onResizeDelayedFunc () {

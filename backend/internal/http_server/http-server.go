@@ -37,6 +37,10 @@ import (
 const BackendHostURLParam = "backendHost"
 const RoomNameURLParam = "roomName"
 const DeleteRoomNameURLParam = "deleteRoomName"
+const CtrlCommandURLParam = "ctrlCommand"
+
+const CtrlCommandNotifyShutdown = "notify_shutdown"
+const CtrlCommandNotifyRestart = "notify_restart"
 
 var defaultPorts = map[string]string{"http": "80", "https": "443"}
 
@@ -57,6 +61,14 @@ var LogMaxFileAgeDays = 60
 var CtrlAuthLogin = "admin132"
 var CtrlAuthPasswd = "password132"
 
+var Domain = "n/a"
+var HttpSchema = "n/a"
+
+type CtrlCommandResponse struct {
+	Command      string `json:"command"`
+	Result       string `json:"result"`
+	ErrorMessage string `json:"errorMessage"`
+}
 
 func StartServer() {
 	rand.Seed(time.Now().UnixNano())
@@ -116,6 +128,8 @@ func StartServer() {
 
 	router.HandleFunc("/ctrl", middleware(ctrlHandler, basicAuthWrapper, loggingWrapper))
 	router.HandleFunc("/ctrl_rooms", middleware(roomsCtrlHandler, basicAuthWrapper))
+  router.HandleFunc("/ctrl_command", middleware(ctrlCommandHandler, basicAuthWrapper))
+
 	router.HandleFunc("/ws_entry", middleware(websocketHandler, loggingWrapper))
 	router.HandleFunc("/hw", middleware(hwStatusHandler, loggingWrapper))
 
@@ -314,6 +328,54 @@ func renderRoomsCtrlPage(w http.ResponseWriter, r *http.Request, activeRooms *[]
 	}
 }
 
+func ctrlCommandHandler(w http.ResponseWriter, r *http.Request) {
+	//delete room
+	urlParams, ok := r.URL.Query()[CtrlCommandURLParam]
+
+	if ok && len(urlParams[0]) > 0 {
+		ctrlCommand := urlParams[0]
+
+    errorMessage := ""
+    result:= ""
+
+    switch ctrlCommand {
+      case CtrlCommandNotifyShutdown:
+        engine.SendControlCommandServerStatusChanged(util.ServerStatusShuttingDown)
+        result = "ok"
+        break
+      case CtrlCommandNotifyRestart:
+        engine.SendControlCommandServerStatusChanged(util.ServerStatusRestarting)
+        result = "ok"
+        break
+      default:
+        errorMessage = "command_not_found"
+    }
+
+    jsonData, err := json.Marshal(CtrlCommandResponse{
+      ctrlCommand,
+      result,
+      errorMessage,
+    })
+
+    if err != nil {
+      util.LogSevere("Failed to serialize structure for 'ctrl command' request. err: '%s'", err)
+      return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.Header().Set("Access-Control-Allow-Origin", HttpSchema + "://" + Domain)
+      w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+    _, err = w.Write(jsonData)
+
+    if err != nil {
+      util.LogSevere("Failed to write response for 'ctrl command' request. err: '%s'", err)
+    } else {
+      util.LogTrace("returning ctrl command: '%s'", jsonData)
+    }
+	}
+}
+
 /* middleware */
 
 // middleware interface for chaining middleware for single routes. Functions are simple HTTP handlers (w http.ResponseWriter, r *http.Request)
@@ -419,11 +481,16 @@ func loadAppConfigs() {
 	LogMaxFilesToKeep = config.AppConfig.Logging.LogMaxFilesToKeep
 	LogMaxFileAgeDays = config.AppConfig.Logging.LogMaxFileAgeDays
 
+	Domain = config.AppConfig.Domain
+	HttpSchema = config.AppConfig.HttpSchema
+
 	CtrlAuthLogin = config.AppConfig.CtrlAuthLogin
 	CtrlAuthPasswd = config.AppConfig.CtrlAuthPasswd
 
 	log.Printf("app config: HttpPort='%s'", HttpPort)
 	log.Printf("app config: HttpTimeout='%s'", HttpTimeout)
+  log.Printf("app config: HttpSchema='%s'", HttpSchema)
+  log.Printf("app config: Domain='%s'", Domain)
 	log.Printf("app config: ShutdownWaitTimeout='%s'", ShutdownWaitTimeout)
 	log.Printf("app config: LogMaxSizeMb='%d'", LogMaxSizeMb)
 	log.Printf("app config: LogMaxFilesToKeep='%d'", LogMaxFilesToKeep)

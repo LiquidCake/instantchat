@@ -133,7 +133,7 @@ func writeMembersListChangedFrameToActiveRoomMembers(room *domain_structures.Roo
 	writeFrameToActiveRoomMembers(roomMembersListChangedDispatchingFrame, room, roomActiveClientSocketsByUUID)
 }
 
-func writeRoomDescriptionChangedFrameToActiveRoomMembers(room *domain_structures.Room) {
+func writeRoomDescriptionChangedFrameToActiveRoomMembers(room *domain_structures.Room, newServerStatus string) {
 	room.Lock()
 
 	//find room creator user
@@ -145,11 +145,12 @@ func writeRoomDescriptionChangedFrameToActiveRoomMembers(room *domain_structures
 	}
 
 	roomDescriptionChangedDispatchingFrame := &domain_structures.OutMessageFrame{
-		Command: domain_structures.RoomChangeDescription,
+		Command:                   domain_structures.RoomChangeDescription,
 		RoomCreatorUserInRoomUUID: roomCreatorUserInRoomUUID,
-		Message:       &[]domain_structures.RoomMessageDTO{
-			{ Text: &room.Description },
-		},
+		ServerStatus:              &ServerStatus,
+		Message:                   &[]domain_structures.RoomMessageDTO{
+                                 { Text: &room.Description },
+                               },
 	}
 
 	roomActiveClientSocketsByUUID := room.CopyActiveClientSocketMapNonLocking()

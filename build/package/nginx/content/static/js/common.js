@@ -72,6 +72,10 @@ const ROOM_TO_HOME_PG_REDIRECT_ERROR_SESSION_COOKIE_MISSING       = "room_to_hom
 const REQUEST_PROCESSING_DETAILS_ROOM_CREATED = "room_created";
 const REQUEST_PROCESSING_DETAILS_ROOM_HAS_PASSWORD = "password=true";
 
+const SERVER_STATUS_ONLINE =        "online";
+const SERVER_STATUS_SHUTTING_DOWN = "shutting_down";
+const SERVER_STATUS_RESTARTING =    "restarting";
+
 
 //messages
 const REQUEST_PROCESSING_DETAILS_ROOM_CREATED_MESSAGE = "you just created a new room!";

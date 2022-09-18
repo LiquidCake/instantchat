@@ -66,6 +66,8 @@ var wsUpgrader = websocket.Upgrader{
 	},
 }
 
+var ServerStatus = util.ServerStatusOnline
+
 //global rooms in-memory storage
 var ActiveRoomsByNameMap = domain_structures.ActiveRoomsByName{
 	ActiveRoomsByName: make(map[string]*domain_structures.Room),
@@ -445,7 +447,7 @@ func WsEntry(w http.ResponseWriter, r *http.Request) {
 
 			room.Unlock()
 
-			writeRoomDescriptionChangedFrameToActiveRoomMembers(room)
+			writeRoomDescriptionChangedFrameToActiveRoomMembers(room, ServerStatus)
 
 			writeRequestProcessedToSocket(clSocket, inFrame.RequestId)
 
@@ -966,6 +968,29 @@ func WsEntry(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func SendControlCommandServerStatusChanged(newServerStatus string) {
+  var activeRoomsCopy []*domain_structures.Room
+
+  ActiveRoomsByNameMap.Lock()
+
+  //change server status string under rooms list lock
+  ServerStatus = newServerStatus
+  //collect list of existing rooms to notify about server status change
+	for _, room := range ActiveRoomsByNameMap.ActiveRoomsByName {
+		if !room.IsDeleted {
+			activeRoomsCopy = append(activeRoomsCopy, room)
+		}
+	}
+
+	ActiveRoomsByNameMap.Unlock()
+
+  for _, room := range activeRoomsCopy {
+    if !room.IsDeleted {
+      writeRoomDescriptionChangedFrameToActiveRoomMembers(room, ServerStatus)
+    }
+  }
+}
+
 func createRoom(frame *domain_structures.InMessageFrame, createdBySessionUUID string) (*domain_structures.Room, error) {
 	nameTrimmed := strings.TrimSpace(frame.Room.Name)
 	passwordTrimmed := strings.TrimSpace(frame.Room.Password)
@@ -1252,12 +1277,13 @@ func logIntoRoom(
 	}
 
 	roomDescriptionFrame := domain_structures.OutMessageFrame{
-		Command: domain_structures.RoomChangeDescription,
-		CreatedAtNano: &roomDataCopiedAt,
+		Command:                   domain_structures.RoomChangeDescription,
+		CreatedAtNano:             &roomDataCopiedAt,
 		RoomCreatorUserInRoomUUID: roomCreatorUserInRoomUUID,
-		Message:       &[]domain_structures.RoomMessageDTO{
-			{ Text: &roomDescriptionSafeCopy },
-		},
+		ServerStatus:              &ServerStatus,
+		Message:                   &[]domain_structures.RoomMessageDTO{
+                                 { Text: &roomDescriptionSafeCopy },
+                               },
 	}
 
 	if err := writeAfterRoomJoinMessagesToSocket(&roomMembersListChangedFrame, &allMessagesFrame, &roomDescriptionFrame, clSocket); err == nil {

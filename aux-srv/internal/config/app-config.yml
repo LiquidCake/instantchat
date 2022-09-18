@@ -29,6 +29,7 @@ forbiddenRoomNames:
   - about
   - control_page_proxy
   - favicon.ico
+  - ctrl_command
 
 ctrlAuthLogin: "admin111"
 ctrlAuthPasswd: "password111"
