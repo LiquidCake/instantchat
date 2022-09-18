@@ -256,7 +256,7 @@ scp -r instantchat/build/deployment/single-node/prometheus/ instantchat@192.168.
 scp -r instantchat/build/deployment/single-node/grafana/ instantchat@192.168.1.100:/home/instantchat
 ```
 
-### execute on remote node
+execute on remote node:
 ```
 ./env-init-ubuntu.sh
 ./init-single-node.sh
@@ -270,9 +270,9 @@ docker save -o /tmp/nginx-latest.tar nginx:latest && \
 docker save -o /tmp/aux-srv-latest.tar aux-srv:latest && \
 docker save -o /tmp/backend-latest.tar backend:latest
 
-scp /tmp/nginx-latest.tar instantchat@46.175.149.153:/home/instantchat
-scp /tmp/aux-srv-latest.tar instantchat@46.175.149.153:/home/instantchat
-scp /tmp/backend-latest.tar instantchat@46.175.149.153:/home/instantchat
+scp /tmp/nginx-latest.tar instantchat@192.168.1.100:/home/instantchat
+scp /tmp/aux-srv-latest.tar instantchat@192.168.1.100:/home/instantchat
+scp /tmp/backend-latest.tar instantchat@192.168.1.100:/home/instantchat
 ```
 
 execute on remove node:
