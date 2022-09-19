@@ -268,10 +268,12 @@ execute on build machine:
 ```
 docker save -o /tmp/nginx-latest.tar nginx:latest && \
 docker save -o /tmp/aux-srv-latest.tar aux-srv:latest && \
+docker save -o /tmp/file-srv-latest.tar file-srv:latest && \
 docker save -o /tmp/backend-latest.tar backend:latest
 
 scp /tmp/nginx-latest.tar instantchat@192.168.1.100:/home/instantchat
 scp /tmp/aux-srv-latest.tar instantchat@192.168.1.100:/home/instantchat
+scp /tmp/file-srv-latest.tar instantchat@192.168.1.100:/home/instantchat
 scp /tmp/backend-latest.tar instantchat@192.168.1.100:/home/instantchat
 ```
 
@@ -279,6 +281,7 @@ execute on remove node:
 ```
 sudo docker load -i nginx-latest.tar && \
 sudo docker load -i aux-srv-latest.tar && \
+sudo docker load -i file-srv-latest.tar && \
 sudo docker load -i backend-latest.tar
 ```
 
