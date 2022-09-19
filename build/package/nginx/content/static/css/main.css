@@ -1307,7 +1307,7 @@ a.recent-room-title {
 
 .recent-rooms-popup {
   display: none;
-  position: absolute;
+  position: fixed;
   top: 25px;
   height: calc(100% - 50px);
   left: 5%;

@@ -46,7 +46,7 @@ export BUILD_VERSION="$major_version.$minor_version.$build_num"
 echo "env BUILD_VERSION: $BUILD_VERSION"
 
 # build env
-if [ "$2" = "prod" ]; then
+if [ "$1" = "prod" ]; then
   export BUILD_ENV="prod"
 else
   export BUILD_ENV="dev"
