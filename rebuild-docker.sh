@@ -67,7 +67,9 @@ cd aux-srv/ && go mod init instantchat.rooms/instantchat/aux-srv
 
 CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildVersion=$BUILD_VERSION -X main.BuildEnv=$BUILD_ENV" -o out/aux-srv-out ./cmd/aux-srv
 #build deploy-assistant
-cd .. && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildVersion=$BUILD_VERSION" -o aux-srv/out/assistant-out ./build/deploy-assistant
+cd ../build/deploy-assistant && go mod init instantchat.rooms/instantchat/deploy-assistant
+CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildVersion=$BUILD_VERSION" -o ../../aux-srv/out/assistant-out ./
+cd ../../
 
 #build aux-srv docker image
 docker build -t aux-srv -f build/package/aux-srv/Dockerfile .
@@ -104,7 +106,9 @@ cd backend/ && go mod init instantchat.rooms/instantchat/backend
 
 CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildVersion=$BUILD_VERSION" -o out/backend-out ./cmd/backend
 #build deploy-assistant
-cd .. && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildVersion=$BUILD_VERSION" -o backend/out/assistant-out ./build/deploy-assistant
+cd ../build/deploy-assistant && go mod init instantchat.rooms/instantchat/deploy-assistant
+CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildVersion=$BUILD_VERSION" -o ../../backend/out/assistant-out ./
+cd ../../
 
 #build backend docker image
 docker build -t backend -f build/package/backend/Dockerfile .

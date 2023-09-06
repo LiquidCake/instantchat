@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"strings"
 	"time"
 )
 
@@ -34,6 +35,10 @@ var textFilesCache = map[string]*TextFileContentsCacheItem{}
 var textFilesCacheMutex = sync.Mutex{}
 
 func SaveTextFileToDisk(fileContent string, fileName string, fileGroupPrefix string) error {
+	if strings.Contains(fileName, "..") {
+		return errors.New("bad file name")
+	}
+
 	//create dir to store file if not exists
 	pathToFileGroup := filepath.Join(UploadTextFilesDirPath, fileGroupPrefix)
 
@@ -68,6 +73,10 @@ func SaveTextFileToDisk(fileContent string, fileName string, fileGroupPrefix str
 }
 
 func ReadTextFileFromDisk(fileName string, fileGroupPrefix string) ([]byte, error) {
+	if strings.Contains(fileName, "..") {
+		return nil, errors.New("bad file name")
+	}
+
 	pathToFile := filepath.Join(UploadTextFilesDirPath, fileGroupPrefix, fileName)
 
 	textFilesCacheMutex.Lock()
