@@ -83,7 +83,7 @@ type OutMessageFrame struct {
 	ActiveRoomUsers            *[]RoomUserDTO    `json:"rU,omitempty"`
 
 	CurrentBuildNumber         *string           `json:"bN,omitempty"`
-  ServerStatus               *string           `json:"sS,omitempty"`
+	ServerStatus               *string           `json:"sS,omitempty"`
 }
 
 //struct to distribute message between all client socket routines
