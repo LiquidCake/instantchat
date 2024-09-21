@@ -24,7 +24,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v2"
 
-  "instantchat.rooms/instantchat/aux-srv/internal/load_balancing"
+	"instantchat.rooms/instantchat/aux-srv/internal/load_balancing"
 	"instantchat.rooms/instantchat/aux-srv/internal/config"
 	"instantchat.rooms/instantchat/aux-srv/internal/templates"
 	"instantchat.rooms/instantchat/aux-srv/internal/util"

@@ -128,7 +128,7 @@ func StartServer() {
 
 	router.HandleFunc("/ctrl", middleware(ctrlHandler, basicAuthWrapper, loggingWrapper))
 	router.HandleFunc("/ctrl_rooms", middleware(roomsCtrlHandler, basicAuthWrapper))
-  router.HandleFunc("/ctrl_command", middleware(ctrlCommandHandler, basicAuthWrapper))
+	router.HandleFunc("/ctrl_command", middleware(ctrlCommandHandler, basicAuthWrapper))
 
 	router.HandleFunc("/ws_entry", middleware(websocketHandler, loggingWrapper))
 	router.HandleFunc("/hw", middleware(hwStatusHandler, loggingWrapper))
@@ -203,7 +203,7 @@ func ctrlHandler(w http.ResponseWriter, r *http.Request) {
 	err := util.GetUserSession(r, &session)
 
 	if err != nil {
-    errorStr = "ERROR: please get session cookie from home/room page"
+		errorStr = "ERROR: please get session cookie from home/room page"
 	}
 
 	renderCtrlPage(w, r, errorStr)
@@ -489,8 +489,8 @@ func loadAppConfigs() {
 
 	log.Printf("app config: HttpPort='%s'", HttpPort)
 	log.Printf("app config: HttpTimeout='%s'", HttpTimeout)
-  log.Printf("app config: HttpSchema='%s'", HttpSchema)
-  log.Printf("app config: Domain='%s'", Domain)
+	log.Printf("app config: HttpSchema='%s'", HttpSchema)
+	log.Printf("app config: Domain='%s'", Domain)
 	log.Printf("app config: ShutdownWaitTimeout='%s'", ShutdownWaitTimeout)
 	log.Printf("app config: LogMaxSizeMb='%d'", LogMaxSizeMb)
 	log.Printf("app config: LogMaxFilesToKeep='%d'", LogMaxFilesToKeep)
