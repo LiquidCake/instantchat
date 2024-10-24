@@ -2,12 +2,13 @@ package engine
 
 import (
 	"encoding/json"
-	"instantchat.rooms/instantchat/backend/internal/domain_structures"
-	"instantchat.rooms/instantchat/backend/internal/util"
-	"github.com/gorilla/websocket"
 	"math/rand"
 	"strconv"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"instantchat.rooms/instantchat/backend/internal/domain_structures"
+	"instantchat.rooms/instantchat/backend/internal/util"
 )
 
 const MessageWriteRandomDelayMaxValueMs = 20
@@ -61,7 +62,7 @@ func clientSocketMessageWritingRoutine(clSocket *domain_structures.WebSocket) {
 /**
 * This method should be called only from clientSocketMessageWritingRoutine()
 * (call it from other place only if synchronous call is really required)
-*/
+ */
 func writeMessageToSocketWithTimeout(socket *websocket.Conn, msgBytes *[]byte, timeout *time.Duration) error {
 	_ = socket.SetWriteDeadline(time.Now().Add(*timeout))
 	//send message to socket
@@ -113,15 +114,14 @@ func writeMembersListChangedFrameToActiveRoomMembers(room *domain_structures.Roo
 	createdAt := time.Now().UnixNano()
 
 	roomMembersListChangedDispatchingFrame := &domain_structures.OutMessageFrame{
-		Command: domain_structures.RoomMembersChanged,
+		Command:       domain_structures.RoomMembersChanged,
 		CreatedAtNano: &createdAt,
-		ActiveRoomUsers:     &roomActiveUsersCopy,
+		AllRoomUsers:  &roomActiveUsersCopy,
 	}
 
 	roomActiveClientSocketsByUUID := room.CopyActiveClientSocketMapNonLocking()
 
 	room.Unlock()
-
 
 	if skipSocketUUID != nil {
 		if _, found := (*roomActiveClientSocketsByUUID)[*skipSocketUUID]; found {
@@ -148,9 +148,9 @@ func writeRoomDescriptionChangedFrameToActiveRoomMembers(room *domain_structures
 		Command:                   domain_structures.RoomChangeDescription,
 		RoomCreatorUserInRoomUUID: roomCreatorUserInRoomUUID,
 		ServerStatus:              &ServerStatus,
-		Message:                   &[]domain_structures.RoomMessageDTO{
-                                 { Text: &room.Description },
-                               },
+		Message: &[]domain_structures.RoomMessageDTO{
+			{Text: &room.Description},
+		},
 	}
 
 	roomActiveClientSocketsByUUID := room.CopyActiveClientSocketMapNonLocking()
@@ -168,7 +168,7 @@ func writeNotificationToActiveRoomMembers(
 	createdAt := time.Now().UnixNano()
 
 	notificationDispatchingFrame := &domain_structures.OutMessageFrame{
-		Command: command,
+		Command:       command,
 		CreatedAtNano: &createdAt,
 	}
 
@@ -197,7 +197,7 @@ func doWriteErrorMessageToSocket(
 		Command:       domain_structures.Error,
 		CreatedAtNano: &createdAt,
 		RequestId:     requestId,
-		Message:       &[]domain_structures.RoomMessageDTO{
+		Message: &[]domain_structures.RoomMessageDTO{
 			{Text: &errorCodeStr},
 		},
 	}
@@ -256,11 +256,11 @@ func writeRequestProcessedToSocketWithAdditInfo(
 }
 
 func writeAfterRoomJoinMessagesToSocket(
-		roomMembersListChangedFrame *domain_structures.OutMessageFrame,
-		allMessagesFrame *domain_structures.OutMessageFrame,
-	    roomDescriptionFrame *domain_structures.OutMessageFrame,
-		clSocket *domain_structures.WebSocket,
-	) error {
+	roomMembersListChangedFrame *domain_structures.OutMessageFrame,
+	allMessagesFrame *domain_structures.OutMessageFrame,
+	roomDescriptionFrame *domain_structures.OutMessageFrame,
+	clSocket *domain_structures.WebSocket,
+) error {
 	roomMembersListChangedFrameJson, err := json.Marshal(roomMembersListChangedFrame)
 	if err != nil {
 		util.LogSevere("error serializing frame to JSON. Frame: '%s', error: '%s'", roomMembersListChangedFrame, err)
@@ -295,7 +295,7 @@ func writeAfterRoomJoinMessagesToSocket(
 	return nil
 }
 
-func removeDeadSocketFromRoom(room *domain_structures.Room, clSocket *domain_structures.WebSocket)  {
+func removeDeadSocketFromRoom(room *domain_structures.Room, clSocket *domain_structures.WebSocket) {
 	//if this socket was connected to some room - make changes to room's active clients list
 	//and notify room's members about user quiting
 

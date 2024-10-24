@@ -2,11 +2,12 @@ package http_server
 
 import (
 	"errors"
-	"instantchat.rooms/instantchat/backend/internal/util"
 	"io/ioutil"
 	"strconv"
 	"strings"
 	"time"
+
+	"instantchat.rooms/instantchat/backend/internal/util"
 )
 
 type HwStatusInfo struct {
@@ -21,7 +22,7 @@ const MeasurementsMaxTicks = 3
 var avgRecentCPUUsagePerc float64 = 0
 var lastRamUsagePerc float64 = 0
 
-//12 slots for measurement each 5sec during 1 minute
+// 12 slots for measurement each 5sec during 1 minute
 var cpuMeasurementsArr [12]float64
 var measurementsCounter = 0
 

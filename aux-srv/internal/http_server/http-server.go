@@ -24,8 +24,8 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v2"
 
-	"instantchat.rooms/instantchat/aux-srv/internal/load_balancing"
 	"instantchat.rooms/instantchat/aux-srv/internal/config"
+	"instantchat.rooms/instantchat/aux-srv/internal/load_balancing"
 	"instantchat.rooms/instantchat/aux-srv/internal/templates"
 	"instantchat.rooms/instantchat/aux-srv/internal/util"
 )
@@ -38,6 +38,7 @@ const RoomNameParam = "roomName"
 
 // Set in yaml app-config
 const DefaultEnvType = "n/a"
+
 var EnvType = DefaultEnvType
 
 var HttpPort = ":8080"
@@ -58,7 +59,7 @@ var CtrlAuthPasswd = "password132"
 
 /* Variables */
 
-//metrics
+// metrics
 var homePageRequested prometheus.Counter
 var roomPageRequested prometheus.Counter
 var pickBackendRequested prometheus.Counter
@@ -150,8 +151,8 @@ func renderHomePage(w http.ResponseWriter, r *http.Request) {
 	err := checkAndCreateUserSession(w, r)
 
 	vars := map[string]interface{}{
-		"error": err,
-		"domain": Domain,
+		"error":      err,
+		"domain":     Domain,
 		"httpSchema": HttpSchema,
 	}
 
@@ -164,7 +165,7 @@ func renderHomePage(w http.ResponseWriter, r *http.Request) {
 
 func renderAboutPage(w http.ResponseWriter, r *http.Request) {
 	vars := map[string]interface{}{
-		"domain": Domain,
+		"domain":     Domain,
 		"httpSchema": HttpSchema,
 	}
 
@@ -188,9 +189,9 @@ func renderRoomPage(w http.ResponseWriter, r *http.Request) {
 
 	vars := map[string]interface{}{
 		"requestedRoom": requestedRoom,
-		"domain": Domain,
-		"httpSchema": HttpSchema,
-		"error": err,
+		"domain":        Domain,
+		"httpSchema":    HttpSchema,
+		"error":         err,
 	}
 
 	err = templates.CompiledTemplates.ExecuteTemplate(w, "tpl-room.html", vars)
@@ -275,7 +276,6 @@ func noCacheWrapper(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-
 // basicAuthWrapper - middleware that wraps handler with basic auth
 func basicAuthWrapper(h http.HandlerFunc) http.HandlerFunc {
 
@@ -342,12 +342,12 @@ func checkAndCreateUserSession(w http.ResponseWriter, r *http.Request) error {
 		encodedSession := base64.StdEncoding.EncodeToString(newSessionJson)
 
 		http.SetCookie(w, &http.Cookie{
-			Name:  "session",
-			Value: encodedSession,
-			Expires: time.Now().Add(365 * 24 * time.Hour),
+			Name:     "session",
+			Value:    encodedSession,
+			Expires:  time.Now().Add(365 * 24 * time.Hour),
 			HttpOnly: true,
-			Secure: CookiesIsSecure,
-			Domain: Domain,
+			Secure:   CookiesIsSecure,
+			Domain:   Domain,
 			SameSite: http.SameSiteStrictMode,
 		})
 	}

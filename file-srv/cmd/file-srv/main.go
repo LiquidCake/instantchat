@@ -1,8 +1,9 @@
 package main
 
 import (
-	"instantchat.rooms/instantchat/file-srv/internal/http_server"
 	"log"
+
+	"instantchat.rooms/instantchat/file-srv/internal/http_server"
 )
 
 var BuildVersion = "n/a"

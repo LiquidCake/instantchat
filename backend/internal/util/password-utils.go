@@ -2,7 +2,7 @@ package util
 
 import "golang.org/x/crypto/bcrypt"
 
-//PasswordHash implements root.Hash
+// PasswordHash implements root.Hash
 type PasswordHash struct{}
 
 func (c *PasswordHash) GenerateHashFromString(s string) (string, error) {

@@ -2,12 +2,13 @@ package engine
 
 import (
 	"errors"
-	"instantchat.rooms/instantchat/backend/internal/domain_structures"
-	"instantchat.rooms/instantchat/backend/internal/util"
-	"github.com/google/uuid"
 	"math/rand"
 	"net/url"
 	"strings"
+
+	"github.com/google/uuid"
+	"instantchat.rooms/instantchat/backend/internal/domain_structures"
+	"instantchat.rooms/instantchat/backend/internal/util"
 )
 
 const RoomUserNameMinLength = 1
@@ -896,7 +897,7 @@ var AnonNames = []string{
 	"Zorse",
 }
 
-//must be executed under room lock
+// must be executed under room lock
 func validateOrPickRoomUserName(providedUserName string, room *domain_structures.Room) (string, bool, error) {
 
 	//validate and check name provided by user (if any)

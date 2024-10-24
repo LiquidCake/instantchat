@@ -1,10 +1,11 @@
 package engine
 
 import (
-	"instantchat.rooms/instantchat/backend/internal/domain_structures"
-	"github.com/gorilla/websocket"
 	"sync"
 	"time"
+
+	"github.com/gorilla/websocket"
+	"instantchat.rooms/instantchat/backend/internal/domain_structures"
 
 	"instantchat.rooms/instantchat/backend/internal/util"
 )
@@ -37,8 +38,8 @@ func runTimer(room *domain_structures.Room, timer *time.Timer) {
 
 	if len(*roomActiveClientSocketsByUUID) <= 0 {
 		//if room is empty, old enough and has been inactive for enough time - delete it
-		if (time.Now().UnixNano() - room.StartedAt) >= RoomEmptyTTL.Nanoseconds() &&
-			(time.Now().UnixNano() - room.LastActiveAt) >= RoomInactiveTTL.Nanoseconds() {
+		if (time.Now().UnixNano()-room.StartedAt) >= RoomEmptyTTL.Nanoseconds() &&
+			(time.Now().UnixNano()-room.LastActiveAt) >= RoomInactiveTTL.Nanoseconds() {
 			deleted := tryDeleteEmptyRoom(room, roomActiveClientSocketsByUUID)
 
 			if deleted {
@@ -98,7 +99,7 @@ func runTimer(room *domain_structures.Room, timer *time.Timer) {
 
 		//if all sockets disconnected AND room has been inactive for enough time - delete room (wont delete if new sockets opened during check)
 		if len(foundDeadSocketsById) == len(*roomActiveClientSocketsByUUID) &&
-			(time.Now().UnixNano() - room.LastActiveAt) >= RoomInactiveTTL.Nanoseconds() {
+			(time.Now().UnixNano()-room.LastActiveAt) >= RoomInactiveTTL.Nanoseconds() {
 
 			deleted := tryDeleteEmptyRoom(room, roomActiveClientSocketsByUUID)
 			if deleted {

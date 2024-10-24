@@ -2,9 +2,10 @@ package engine
 
 import (
 	"errors"
-	"instantchat.rooms/instantchat/backend/internal/domain_structures"
 	"net/url"
 	"sort"
+
+	"instantchat.rooms/instantchat/backend/internal/domain_structures"
 )
 
 const MaxRoomDescriptionLength = 400
@@ -24,7 +25,7 @@ func shrinkRoomMessagesMap(room *domain_structures.Room) {
 	})
 
 	newMessagesArray := make([]*domain_structures.RoomMessage, 0)
-	newMessagesArray = append([]*domain_structures.RoomMessage{}, messagesArray[RoomMessagesLimit / 2:]...)
+	newMessagesArray = append([]*domain_structures.RoomMessage{}, messagesArray[RoomMessagesLimit/2:]...)
 
 	newRoomMessagesMap := make(map[int64]*domain_structures.RoomMessage, len(newMessagesArray))
 
@@ -148,7 +149,7 @@ func findSocketBySessionUUID(clientSocketsByUUID *map[string]*domain_structures.
 	return nil
 }
 
-//equivalent of buffered channel with unlimited size
+// equivalent of buffered channel with unlimited size
 func makeFlexibleChannelPair() (chan<- *domain_structures.OutMessageWrapper, <-chan *domain_structures.OutMessageWrapper) {
 	in := make(chan *domain_structures.OutMessageWrapper)
 	out := make(chan *domain_structures.OutMessageWrapper)
@@ -172,18 +173,19 @@ func makeFlexibleChannelPair() (chan<- *domain_structures.OutMessageWrapper, <-c
 			return inQueue[0]
 		}
 
-	loop: for {
-		select {
-		case val, ok := <-in:
-			if !ok {
-				break loop
-			} else {
-				inQueue = append(inQueue, val)
+	loop:
+		for {
+			select {
+			case val, ok := <-in:
+				if !ok {
+					break loop
+				} else {
+					inQueue = append(inQueue, val)
+				}
+			case outCh() <- curVal():
+				inQueue = inQueue[1:]
 			}
-		case outCh() <- curVal():
-			inQueue = inQueue[1:]
 		}
-	}
 
 		close(out)
 	}()

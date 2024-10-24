@@ -4,14 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"instantchat.rooms/instantchat/backend/internal/domain_structures"
-	"instantchat.rooms/instantchat/backend/internal/metrics"
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/client_golang/prometheus/testutil"
-	"gopkg.in/natefinch/lumberjack.v2"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -25,6 +17,15 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/client_golang/prometheus/testutil"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"gopkg.in/yaml.v2"
+	"instantchat.rooms/instantchat/backend/internal/domain_structures"
+	"instantchat.rooms/instantchat/backend/internal/metrics"
 
 	"instantchat.rooms/instantchat/backend/internal/config"
 	"instantchat.rooms/instantchat/backend/internal/engine"
@@ -242,10 +243,10 @@ func roomsCtrlHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		activeRooms = append(activeRooms, domain_structures.RoomCtrlInfo{
-			Id:                     room.Id,
-			Name:                   room.Name,
-			StartedAt:              time.Unix(0, room.StartedAt).String(),
-			ActiveRoomUsersNum:     room.ActiveRoomUsersLen,
+			Id:                 room.Id,
+			Name:               room.Name,
+			StartedAt:          time.Unix(0, room.StartedAt).String(),
+			ActiveRoomUsersNum: room.ActiveRoomUsersLen,
 		})
 	}
 
@@ -305,8 +306,8 @@ func renderCtrlPage(w http.ResponseWriter, r *http.Request, errorStr string) {
 		"backendInstanceHost": backendInstanceHost,
 		"error":               errorStr,
 		//reading prometheus metrics is expensive but for admin page its ok
-		"activeRooms":         testutil.ToFloat64(engine.RoomsOnlineGauge),
-		"activeUsers":         testutil.ToFloat64(engine.UsersOnlineGauge),
+		"activeRooms": testutil.ToFloat64(engine.RoomsOnlineGauge),
+		"activeUsers": testutil.ToFloat64(engine.UsersOnlineGauge),
 	}
 
 	err := templates.CompiledTemplates.ExecuteTemplate(w, "tpl-ctrl.html", vars)
@@ -335,44 +336,44 @@ func ctrlCommandHandler(w http.ResponseWriter, r *http.Request) {
 	if ok && len(urlParams[0]) > 0 {
 		ctrlCommand := urlParams[0]
 
-    errorMessage := ""
-    result:= ""
+		errorMessage := ""
+		result := ""
 
-    switch ctrlCommand {
-      case CtrlCommandNotifyShutdown:
-        engine.SendControlCommandServerStatusChanged(util.ServerStatusShuttingDown)
-        result = "ok"
-        break
-      case CtrlCommandNotifyRestart:
-        engine.SendControlCommandServerStatusChanged(util.ServerStatusRestarting)
-        result = "ok"
-        break
-      default:
-        errorMessage = "command_not_found"
-    }
+		switch ctrlCommand {
+		case CtrlCommandNotifyShutdown:
+			engine.SendControlCommandServerStatusChanged(util.ServerStatusShuttingDown)
+			result = "ok"
+			break
+		case CtrlCommandNotifyRestart:
+			engine.SendControlCommandServerStatusChanged(util.ServerStatusRestarting)
+			result = "ok"
+			break
+		default:
+			errorMessage = "command_not_found"
+		}
 
-    jsonData, err := json.Marshal(CtrlCommandResponse{
-      ctrlCommand,
-      result,
-      errorMessage,
-    })
+		jsonData, err := json.Marshal(CtrlCommandResponse{
+			ctrlCommand,
+			result,
+			errorMessage,
+		})
 
-    if err != nil {
-      util.LogSevere("Failed to serialize structure for 'ctrl command' request. err: '%s'", err)
-      return
-    }
+		if err != nil {
+			util.LogSevere("Failed to serialize structure for 'ctrl command' request. err: '%s'", err)
+			return
+		}
 
-    w.Header().Set("Content-Type", "application/json")
-    w.Header().Set("Access-Control-Allow-Origin", HttpSchema + "://" + Domain)
-      w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Access-Control-Allow-Origin", HttpSchema+"://"+Domain)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
-    _, err = w.Write(jsonData)
+		_, err = w.Write(jsonData)
 
-    if err != nil {
-      util.LogSevere("Failed to write response for 'ctrl command' request. err: '%s'", err)
-    } else {
-      util.LogTrace("returning ctrl command: '%s'", jsonData)
-    }
+		if err != nil {
+			util.LogSevere("Failed to write response for 'ctrl command' request. err: '%s'", err)
+		} else {
+			util.LogTrace("returning ctrl command: '%s'", jsonData)
+		}
 	}
 }
 

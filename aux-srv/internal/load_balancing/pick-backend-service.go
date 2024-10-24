@@ -3,8 +3,6 @@ package load_balancing
 import (
 	"encoding/json"
 	"errors"
-	"instantchat.rooms/instantchat/aux-srv/internal/config"
-	"instantchat.rooms/instantchat/aux-srv/internal/util"
 	"fmt"
 	"net"
 	"net/http"
@@ -14,6 +12,9 @@ import (
 	"sync"
 	"time"
 	"unicode"
+
+	"instantchat.rooms/instantchat/aux-srv/internal/config"
+	"instantchat.rooms/instantchat/aux-srv/internal/util"
 )
 
 type PickBackendResponse struct {
@@ -28,7 +29,7 @@ type RoomNameCacheItem struct {
 	backendInstanceAddr string
 }
 
-//backend response format
+// backend response format
 type HwStatusInfo struct {
 	AvgRecentCPUUsagePerc float64 `json:"cpu"`
 	LastRamUsagePerc      float64 `json:"ram"`
@@ -68,10 +69,9 @@ var allowedRoomNameSpecialChars = []string{
 	"]",
 }
 
-
 /* Variables */
 
-//room name tracking cache - holds room name lock, lastCheckTimestamp, picked backend instance
+// room name tracking cache - holds room name lock, lastCheckTimestamp, picked backend instance
 var roomNamesCache = map[string]*RoomNameCacheItem{}
 var roomNamesMutex = sync.Mutex{}
 
@@ -130,7 +130,7 @@ func ValidateRoomAndPickBackend(roomName string) PickBackendResponse {
 	unavailableBackendsTrackingCopy := make(map[string]int64)
 
 	unavailableBackendsTrackingMutex.Lock()
-	for k,v := range unavailableBackendsTracking {
+	for k, v := range unavailableBackendsTracking {
 		unavailableBackendsTrackingCopy[k] = v
 	}
 	unavailableBackendsTrackingMutex.Unlock()
@@ -159,7 +159,6 @@ func ValidateRoomAndPickBackend(roomName string) PickBackendResponse {
 		}
 		unavailableBackendsTrackingMutex.Unlock()
 	}()
-
 
 	/* If backend was already picked for this room but last "room exists on backend" check was too long ago - check if room still exists on that backend */
 
@@ -197,7 +196,6 @@ func ValidateRoomAndPickBackend(roomName string) PickBackendResponse {
 			}
 		}
 	}
-
 
 	/* If backend was not picked yet for this room - pick least-loaded backend instance and save to cache */
 
@@ -246,13 +244,13 @@ func ValidateRoomAndPickBackend(roomName string) PickBackendResponse {
 	}
 
 	return PickBackendResponse{
-		BackendInstanceAddr: cacheItem.backendInstanceAddr,
-		ErrorMessage:        "",
+		BackendInstanceAddr:          cacheItem.backendInstanceAddr,
+		ErrorMessage:                 "",
 		AlternativeRoomNamePostfixes: findAlternativeRoomNamePostfixes(roomName),
 	}
 }
 
-//creates list of postfixes to propose alternative room names. E.g. if "myroom" is taken - propose "myroom-2", "myroom-100" etc.
+// creates list of postfixes to propose alternative room names. E.g. if "myroom" is taken - propose "myroom-2", "myroom-100" etc.
 func findAlternativeRoomNamePostfixes(roomName string) []string {
 	alternativeRoomNamePostfixes := make([]string, 0)
 	freePostfixesFound := 0
@@ -262,7 +260,7 @@ func findAlternativeRoomNamePostfixes(roomName string) []string {
 	for i := 2; i < 10; i++ {
 		iStr := strconv.Itoa(i)
 
-		if _, exists := roomNamesCache[roomName + "-" + iStr]; !exists {
+		if _, exists := roomNamesCache[roomName+"-"+iStr]; !exists {
 			alternativeRoomNamePostfixes = append(alternativeRoomNamePostfixes, iStr)
 			freePostfixesFound++
 		}
@@ -275,7 +273,7 @@ func findAlternativeRoomNamePostfixes(roomName string) []string {
 	for i := 100; i < 9999999; i++ {
 		iStr := strconv.Itoa(i)
 
-		if _, exists := roomNamesCache[roomName + "-" + iStr]; !exists {
+		if _, exists := roomNamesCache[roomName+"-"+iStr]; !exists {
 			alternativeRoomNamePostfixes = append(alternativeRoomNamePostfixes, iStr)
 			freePostfixesFound++
 		}
@@ -346,7 +344,7 @@ func queryAllBackendsForHwStatus(roomName string,
 
 				go util.NotifyBackendIsFull(backendInstance)
 			}
-			
+
 			if err == nil && !gotEmptyValues && !tooManyUsersOnBackend {
 				hwStatusResponsesMutex.Lock()
 				hwStatusResponsesByInstance[backendInstance] = hwStatusResponse

@@ -20,9 +20,9 @@ func (p PairList) Len() int {
 	return len(p)
 }
 
-//sorted by RAM, then if equal - CPU
-//RAM values are ceiled to 10th, so e.g. 16 becomes 20 etc.
-//needed to average RAM load a bit and allow picking node with lower CPU between several nodes with close RAM load values
+// sorted by RAM, then if equal - CPU
+// RAM values are ceiled to 10th, so e.g. 16 becomes 20 etc.
+// needed to average RAM load a bit and allow picking node with lower CPU between several nodes with close RAM load values
 func (p PairList) Less(i, j int) bool {
 	roundRam1 := ceilToTen(p[i].Value.LastRamUsagePerc)
 	cpu1 := p[i].Value.AvgRecentCPUUsagePerc
@@ -37,7 +37,7 @@ func (p PairList) Less(i, j int) bool {
 	}
 }
 
-//rounds towards next 10th e.g. - 0 to 10, 3 to 10, 12 to 20, 18 to 20 etc.
+// rounds towards next 10th e.g. - 0 to 10, 3 to 10, 12 to 20, 18 to 20 etc.
 func ceilToTen(val float64) int {
 	if val == 0 {
 		return 10

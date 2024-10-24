@@ -2,17 +2,18 @@ package engine
 
 import (
 	"errors"
-	"instantchat.rooms/instantchat/backend/internal/config"
-	"instantchat.rooms/instantchat/backend/internal/domain_structures"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
-	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
+	"github.com/prometheus/client_golang/prometheus"
+	"instantchat.rooms/instantchat/backend/internal/config"
+	"instantchat.rooms/instantchat/backend/internal/domain_structures"
 
 	"instantchat.rooms/instantchat/backend/internal/util"
 )
@@ -49,15 +50,15 @@ var allowedRoomNameSpecialChars = []string{
 }
 
 const RoomMessagesLimit = 1000
-var RoomMessagesLimitApproachingWarningBreakpoints = []int{950, 975, 990}
 
+var RoomMessagesLimitApproachingWarningBreakpoints = []int{950, 975, 990}
 
 /* Variables */
 
 var hasher = util.PasswordHash{}
 
 var wsUpgrader = websocket.Upgrader{
-	HandshakeTimeout: SocketWriteTimeout,
+	HandshakeTimeout:  SocketWriteTimeout,
 	EnableCompression: true,
 
 	CheckOrigin: func(r *http.Request) bool {
@@ -68,12 +69,12 @@ var wsUpgrader = websocket.Upgrader{
 
 var ServerStatus = util.ServerStatusOnline
 
-//global rooms in-memory storage
+// global rooms in-memory storage
 var ActiveRoomsByNameMap = domain_structures.ActiveRoomsByName{
 	ActiveRoomsByName: make(map[string]*domain_structures.Room),
 }
 
-//metrics
+// metrics
 var RoomsOnlineGauge prometheus.Gauge
 var UsersOnlineGauge prometheus.Gauge
 var AvgUsersOnlineGauge prometheus.Gauge
@@ -527,7 +528,7 @@ func WsEntry(w http.ResponseWriter, r *http.Request) {
 
 			messageDispatchingFrame := &domain_structures.OutMessageFrame{
 				Command: domain_structures.TextMessage,
-				Message:       &[]domain_structures.RoomMessageDTO{copyMessageAsDTO(newRoomMessage)},
+				Message: &[]domain_structures.RoomMessageDTO{copyMessageAsDTO(newRoomMessage)},
 			}
 
 			//make copy of active client sockets connected to this room while under lock.
@@ -625,7 +626,7 @@ func WsEntry(w http.ResponseWriter, r *http.Request) {
 			existingMessage.LastEditedAt = &lastEditedAt
 
 			messageEditDispatchingFrame := &domain_structures.OutMessageFrame{
-				Command: domain_structures.TextMessageEdit,
+				Command:       domain_structures.TextMessageEdit,
 				Message:       &[]domain_structures.RoomMessageDTO{copyEditedMessageAsDTO(existingMessage)},
 				CreatedAtNano: &lastEditedAt,
 			}
@@ -718,7 +719,7 @@ func WsEntry(w http.ResponseWriter, r *http.Request) {
 			messageDeleteDispatchingFrame := &domain_structures.OutMessageFrame{
 				Command: domain_structures.TextMessageDelete,
 				Message: &[]domain_structures.RoomMessageDTO{
-					{Id: &existingMessage.Id},   //no need in safe copy because Id field wont change
+					{Id: &existingMessage.Id}, //no need in safe copy because Id field wont change
 				},
 			}
 
@@ -854,7 +855,7 @@ func WsEntry(w http.ResponseWriter, r *http.Request) {
 			existingMessage.LastVotedAt = &lastVotedAt
 
 			messageSupportDispatchingFrame := &domain_structures.OutMessageFrame{
-				Command: domain_structures.TextMessageSupportOrReject,
+				Command:       domain_structures.TextMessageSupportOrReject,
 				Message:       &[]domain_structures.RoomMessageDTO{copyVotedMessageAsDTO(existingMessage)},
 				CreatedAtNano: &lastVotedAt,
 			}
@@ -945,7 +946,7 @@ func WsEntry(w http.ResponseWriter, r *http.Request) {
 
 			messageDispatchingFrame := &domain_structures.OutMessageFrame{
 				Command: domain_structures.UserDrawingMessage,
-				Message:       &[]domain_structures.RoomMessageDTO{copyMessageAsDTO(newRoomMessage)},
+				Message: &[]domain_structures.RoomMessageDTO{copyMessageAsDTO(newRoomMessage)},
 			}
 
 			//make copy of active client sockets connected to this room while under lock.
@@ -969,13 +970,13 @@ func WsEntry(w http.ResponseWriter, r *http.Request) {
 }
 
 func SendControlCommandServerStatusChanged(newServerStatus string) {
-  var activeRoomsCopy []*domain_structures.Room
+	var activeRoomsCopy []*domain_structures.Room
 
-  ActiveRoomsByNameMap.Lock()
+	ActiveRoomsByNameMap.Lock()
 
-  //change server status string under rooms list lock
-  ServerStatus = newServerStatus
-  //collect list of existing rooms to notify about server status change
+	//change server status string under rooms list lock
+	ServerStatus = newServerStatus
+	//collect list of existing rooms to notify about server status change
 	for _, room := range ActiveRoomsByNameMap.ActiveRoomsByName {
 		if !room.IsDeleted {
 			activeRoomsCopy = append(activeRoomsCopy, room)
@@ -984,11 +985,11 @@ func SendControlCommandServerStatusChanged(newServerStatus string) {
 
 	ActiveRoomsByNameMap.Unlock()
 
-  for _, room := range activeRoomsCopy {
-    if !room.IsDeleted {
-      writeRoomDescriptionChangedFrameToActiveRoomMembers(room, ServerStatus)
-    }
-  }
+	for _, room := range activeRoomsCopy {
+		if !room.IsDeleted {
+			writeRoomDescriptionChangedFrameToActiveRoomMembers(room, ServerStatus)
+		}
+	}
 }
 
 func createRoom(frame *domain_structures.InMessageFrame, createdBySessionUUID string) (*domain_structures.Room, error) {
@@ -1255,14 +1256,13 @@ func logIntoRoom(
 
 	go writeMembersListChangedFrameToActiveRoomMembers(room, &clSocket.SocketUUID)
 
-
 	/* Send current room members list and all messages existing to this moment to new user */
 
 	//send room users list (separately for newly-joined user, to pass it pseudo-synchronously)
 	roomMembersListChangedFrame := domain_structures.OutMessageFrame{
-		Command: domain_structures.RoomMembersChanged,
+		Command:       domain_structures.RoomMembersChanged,
 		CreatedAtNano: &roomDataCopiedAt,
-		ActiveRoomUsers:     &roomActiveUsersCopy,
+		AllRoomUsers:  &roomActiveUsersCopy,
 	}
 
 	//send all room messages to user
@@ -1271,7 +1271,7 @@ func logIntoRoom(
 	})
 
 	allMessagesFrame := domain_structures.OutMessageFrame{
-		Command: domain_structures.AllTextMessages,
+		Command:       domain_structures.AllTextMessages,
 		Message:       allRoomMessagesDTOCopy,
 		CreatedAtNano: &roomDataCopiedAt,
 	}
@@ -1281,9 +1281,9 @@ func logIntoRoom(
 		CreatedAtNano:             &roomDataCopiedAt,
 		RoomCreatorUserInRoomUUID: roomCreatorUserInRoomUUID,
 		ServerStatus:              &ServerStatus,
-		Message:                   &[]domain_structures.RoomMessageDTO{
-                                 { Text: &roomDescriptionSafeCopy },
-                               },
+		Message: &[]domain_structures.RoomMessageDTO{
+			{Text: &roomDescriptionSafeCopy},
+		},
 	}
 
 	if err := writeAfterRoomJoinMessagesToSocket(&roomMembersListChangedFrame, &allMessagesFrame, &roomDescriptionFrame, clSocket); err == nil {

@@ -20,11 +20,11 @@ type AppConfigList struct {
 		LogMaxFileAgeDays int `yaml:"logMaxFileAgeDays"`
 	} `yaml:"logging"`
 
-	CtrlAuthLogin string `yaml:"ctrlAuthLogin"`
+	CtrlAuthLogin  string `yaml:"ctrlAuthLogin"`
 	CtrlAuthPasswd string `yaml:"ctrlAuthPasswd"`
 
-  Domain     string `yaml:"domain"`
-  HttpSchema string `yaml:"httpSchema"`
+	Domain     string `yaml:"domain"`
+	HttpSchema string `yaml:"httpSchema"`
 }
 
 var AppConfig AppConfigList

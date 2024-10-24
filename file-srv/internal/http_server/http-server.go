@@ -3,12 +3,6 @@ package http_server
 import (
 	"context"
 	"encoding/json"
-	"instantchat.rooms/instantchat/file-srv/internal/file_storage"
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"gopkg.in/natefinch/lumberjack.v2"
-	"gopkg.in/yaml.v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -20,6 +14,13 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gopkg.in/natefinch/lumberjack.v2"
+	"gopkg.in/yaml.v2"
+	"instantchat.rooms/instantchat/file-srv/internal/file_storage"
 
 	"instantchat.rooms/instantchat/file-srv/internal/config"
 	"instantchat.rooms/instantchat/file-srv/internal/url_preview"
@@ -40,7 +41,7 @@ var LogMaxFileAgeDays = 60
 
 /* Variables */
 
-//metrics
+// metrics
 var filesReceived prometheus.Counter
 var filesRequested prometheus.Counter
 

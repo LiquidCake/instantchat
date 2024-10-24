@@ -115,18 +115,6 @@ docker build -t backend -f build/package/backend/Dockerfile .
 docker tag backend backend:$BUILD_VERSION
 
 
-# Build config-srv
-echo ""
-#echo "=== Building config-srv"
-
-#cd config-srv && ./build-app.sh
-#cd .. && ls
-
-#build config-srv docker image
-#docker build -t config-srv --build-arg build_ver=$BUILD_VERSION -f build/package/config-srv/Dockerfile .
-#docker tag config-srv config-srv:$BUILD_VERSION
-
-
 # Build nginx
 echo ""
 echo "=== Building nginx"

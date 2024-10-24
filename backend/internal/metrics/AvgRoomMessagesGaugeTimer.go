@@ -1,10 +1,11 @@
 package metrics
 
 import (
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 	"instantchat.rooms/instantchat/backend/internal/domain_structures"
 	"instantchat.rooms/instantchat/backend/internal/util"
-	"github.com/prometheus/client_golang/prometheus"
-	"time"
 )
 
 const AvgRoomMessagesTimerRunInterval = 60 * time.Second

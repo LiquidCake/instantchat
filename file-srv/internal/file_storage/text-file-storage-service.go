@@ -2,19 +2,20 @@ package file_storage
 
 import (
 	"errors"
-	"instantchat.rooms/instantchat/file-srv/internal/util"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync"
 	"strings"
+	"sync"
 	"time"
+
+	"instantchat.rooms/instantchat/file-srv/internal/util"
 )
 
 type TextFileContentsCacheItem struct {
-	fileLock            sync.Mutex
-	lastCheckTimestamp  int64
-	fileTextContent     []byte
+	fileLock           sync.Mutex
+	lastCheckTimestamp int64
+	fileTextContent    []byte
 }
 
 /* Constants */
@@ -113,7 +114,6 @@ func ReadTextFileFromDisk(fileName string, fileGroupPrefix string) ([]byte, erro
 	return textFileCacheItem.fileTextContent, nil
 }
 
-
 func StartClearOldCacheItemsFuncPeriodical() {
 	ticker := time.NewTicker(ClearOldCacheItemsFuncDelay)
 
@@ -136,7 +136,7 @@ func StartDeleteOldTextFilesFuncPeriodical() {
 	}
 }
 
-func clearOldCacheItems()  {
+func clearOldCacheItems() {
 	var entriesToRemoveFromCacheArr []string
 
 	textFilesCacheMutex.Lock()
@@ -156,7 +156,7 @@ func clearOldCacheItems()  {
 	textFilesCacheMutex.Unlock()
 }
 
-func deleteOldTextFiles()  {
+func deleteOldTextFiles() {
 	timeNow := time.Now()
 
 	textFilesGroupDir, err := ioutil.ReadDir(UploadTextFilesDirPath)

@@ -10,17 +10,17 @@ import (
 	"sync"
 	"time"
 
-	"instantchat.rooms/instantchat/file-srv/internal/util"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/disintegration/imaging"
+	"instantchat.rooms/instantchat/file-srv/internal/util"
 )
 
-//url preview response format
+// url preview response format
 type UrlPreviewInfo struct {
-	Url             *string `json:"u,omitempty"`     //url of page
-	Title           *string `json:"t,omitempty"`
-	Description     *string `json:"d,omitempty"`
-	ImageUrl        *string `json:"i,omitempty"`     //url of og:image from webpage
+	Url         *string `json:"u,omitempty"` //url of page
+	Title       *string `json:"t,omitempty"`
+	Description *string `json:"d,omitempty"`
+	ImageUrl    *string `json:"i,omitempty"` //url of og:image from webpage
 
 	ImageDataBase64 *string `json:"b64,omitempty"` //base64 encoded data of image, in case of image URL
 }
@@ -43,7 +43,6 @@ const PreviewImageAllowedSizeMaxBytes = 3500000
 
 const UrlImageResizeToWidthPx = 400
 
-
 /* Variables */
 
 var urlPreviewClient = &http.Client{
@@ -65,7 +64,6 @@ var urlPreviewClient = &http.Client{
 
 var urlToPreviewInfoCache = map[string]*UrlPreviewInfoCacheItem{}
 var urlToPreviewInfoCacheMutex = sync.Mutex{}
-
 
 func GetUrlPreviewInfo(url string) (UrlPreviewInfo, error) {
 	//if URL is not tracked yet - put it into cache right away (to later utilize cache item lock)
@@ -122,7 +120,6 @@ func GetUrlPreviewInfo(url string) (UrlPreviewInfo, error) {
 
 		respContentType, respContentTypeExists := r.Header["Content-Type"]
 
-
 		/* Check if URL points to image */
 
 		if respContentTypeExists &&
@@ -158,14 +155,12 @@ func GetUrlPreviewInfo(url string) (UrlPreviewInfo, error) {
 					urlPreviewCacheItem.urlPreviewInfoData.ImageDataBase64 = &base64DataStr
 					urlPreviewCacheItem.urlPreviewInfoData.Url = &url
 
-
 					return urlPreviewCacheItem.urlPreviewInfoData, nil
 				}
 			}
 
 			return UrlPreviewInfo{}, err
 		}
-
 
 		/* else - URL must be pointing to web page */
 
@@ -242,7 +237,7 @@ func StartClearOldCacheItemsFuncPeriodical() {
 	}
 }
 
-func clearOldCacheItems()  {
+func clearOldCacheItems() {
 	var urlsToRemoveFromCacheArr []string
 
 	urlToPreviewInfoCacheMutex.Lock()

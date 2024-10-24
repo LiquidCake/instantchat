@@ -1,9 +1,10 @@
 package main
 
 import (
-	"instantchat.rooms/instantchat/backend/internal/http_server"
-	"instantchat.rooms/instantchat/backend/internal/config"
 	"log"
+
+	"instantchat.rooms/instantchat/backend/internal/config"
+	"instantchat.rooms/instantchat/backend/internal/http_server"
 )
 
 var BuildVersion = "n/a"

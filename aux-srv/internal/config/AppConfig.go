@@ -21,19 +21,19 @@ type AppConfigList struct {
 	} `yaml:"logging"`
 
 	CookiesProd struct {
-		IsSecure       bool        `yaml:"isSecure"`
+		IsSecure bool `yaml:"isSecure"`
 	} `yaml:"cookiesProd"`
 
 	CookiesDev struct {
-		IsSecure       bool        `yaml:"isSecure"`
+		IsSecure bool `yaml:"isSecure"`
 	} `yaml:"cookiesDev"`
 
 	Domain string `yaml:"domain"`
 
 	MainHttpSchemaProd string `yaml:"mainHttpSchemaProd"`
-	MainHttpSchemaDev string `yaml:"mainHttpSchemaDev"`
+	MainHttpSchemaDev  string `yaml:"mainHttpSchemaDev"`
 
-	CtrlAuthLogin string `yaml:"ctrlAuthLogin"`
+	CtrlAuthLogin  string `yaml:"ctrlAuthLogin"`
 	CtrlAuthPasswd string `yaml:"ctrlAuthPasswd"`
 }
 
