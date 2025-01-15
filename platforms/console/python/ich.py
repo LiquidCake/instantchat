@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 #
-#askii rendering is skipped - if you want to enable - include your own code to render ascii art from image url
+# askii rendering is skipped - if you want to enable - include your own code to render ascii art from image url
+# e.g. asciify.py (https://github.com/RameshAditya/asciify) can be copied right into this script
 #
 def get_image_ascii():
     print_green('| cant render ascii for image (no renderer supplied)')
