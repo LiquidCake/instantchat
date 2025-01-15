@@ -11,15 +11,20 @@ Service is written in GO (backend) and jquery (frontend)
 GUI is written in JS+Jquery by hand. It is responsive, cross-browser and cross-platform  
 Base service monitoring (Grafana/Prometheus) is included  
 
-### Check author's deployed instance
-at https://avajoin.net/  
+### Check out author's deployed instance at https://avajoin.net/  
 
 ### Screenshots
-![152684403-41758f22-037e-43b7-854c-461e0ed463ed](https://user-images.githubusercontent.com/9273621/190246233-27dd3b8b-8038-473e-9a7f-435aa4423026.png)
+![large](https://github.com/user-attachments/assets/3940d57f-0b4d-4132-9274-e75376d64886)
+
+
+####
+![small](https://github.com/user-attachments/assets/d33e51ab-20e2-4d6f-a61a-af56fd0b8302)
 
 ####
 
-![screenshot2](https://user-images.githubusercontent.com/9273621/152684406-01c371f0-2e0d-4610-86cb-40dc7f8d5b20.png)
+![universal-w98](https://github.com/user-attachments/assets/e83caea9-18e6-4610-84a7-349bbc0b961f)
+
+####
 
 ### Architecture and service specifics
 
