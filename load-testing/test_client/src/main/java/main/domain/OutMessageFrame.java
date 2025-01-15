@@ -1,9 +1,11 @@
 package main.domain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Arrays;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class OutMessageFrame {
     @JsonProperty("c")
     private String command;
