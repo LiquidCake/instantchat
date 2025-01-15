@@ -15,6 +15,8 @@ type AppConfigList struct {
 		LogMaxFilesToKeep int `yaml:"logMaxFilesToKeep"`
 		LogMaxFileAgeDays int `yaml:"logMaxFileAgeDays"`
 	} `yaml:"logging"`
+
+	TextFilesEnabled bool `yaml:"textFilesEnabled"`
 }
 
 var AppConfig AppConfigList

@@ -1,17 +1,16 @@
 package load_balancing
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
-	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
-	"unicode"
 
 	"instantchat.rooms/instantchat/aux-srv/internal/config"
 	"instantchat.rooms/instantchat/aux-srv/internal/util"
@@ -39,35 +38,20 @@ type HwStatusInfo struct {
 
 /* Constants */
 
-const RoomCredsMinChars = 3
-const RoomCredsMaxChars = 100
-
 const RoomNameCacheTTL = 1 * time.Minute
 
 const BackendUnavailableNextCheckDelay = 10 * time.Second
 
 const MaxUsersOnlinePerBackend = 100000
+const ConcurrentBackendUsersNotificationThreshold = 100
+
+const MaxBackendRecentCPULoadPercentUntilWarning = 90
+const MaxBackendRecentRAMUsagePercentUntilWarning = 85
 
 const BackendHwEndpointPath = "hw"
 const BackendHwEndpointRoomNameURLParam = "roomName"
 
 const MaxAlternativeRoomNamePostfixes = 4
-
-var allowedRoomNameSpecialChars = []string{
-	"!",
-	"@",
-	"$",
-	"*",
-	"(",
-	")",
-	"_",
-	"-",
-	",",
-	".",
-	"~",
-	"[",
-	"]",
-}
 
 /* Variables */
 
@@ -78,27 +62,43 @@ var roomNamesMutex = sync.Mutex{}
 var unavailableBackendsTracking = make(map[string]int64)
 var unavailableBackendsTrackingMutex = sync.Mutex{}
 
-var backendHwStatusClient = &http.Client{
-	Timeout: 4 * time.Second,
-	Transport: &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout: 2 * time.Second,
-		}).DialContext,
+var backendHwStatusClient *http.Client = nil
 
-		TLSHandshakeTimeout:   3 * time.Second,
-		ExpectContinueTimeout: 3 * time.Second,
-		ResponseHeaderTimeout: 5 * time.Second,
-		IdleConnTimeout:       90 * time.Second,
-		MaxConnsPerHost:       0,
-		MaxIdleConns:          0,
-		MaxIdleConnsPerHost:   20,
-	},
+func InitBackendHwStatusHttpClient(unsecureTestMode bool) {
+	var tlsConfig *tls.Config = nil
+
+	if unsecureTestMode {
+		log.Printf("WARNING: unsecure http client enabled")
+
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: true,
+			MinVersion:         tls.VersionTLS10,
+		}
+	}
+
+	backendHwStatusClient = &http.Client{
+		Timeout: 4 * time.Second,
+		Transport: &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: 2 * time.Second,
+			}).DialContext,
+
+			TLSHandshakeTimeout:   3 * time.Second,
+			ExpectContinueTimeout: 3 * time.Second,
+			ResponseHeaderTimeout: 5 * time.Second,
+			IdleConnTimeout:       90 * time.Second,
+			MaxConnsPerHost:       0,
+			MaxIdleConns:          0,
+			MaxIdleConnsPerHost:   20,
+			TLSClientConfig:       tlsConfig,
+		},
+	}
 }
 
 func ValidateRoomAndPickBackend(roomName string) PickBackendResponse {
 	/* Validate room name */
 
-	errorMessage := validateRoomName(roomName)
+	errorMessage := util.ValidateRoomName(roomName)
 
 	if errorMessage != "" {
 		return PickBackendResponse{
@@ -106,23 +106,6 @@ func ValidateRoomAndPickBackend(roomName string) PickBackendResponse {
 			ErrorMessage:        errorMessage,
 		}
 	}
-
-	/* Pick backend for room name */
-
-	//if room name is not tracked yet - put it into cache
-	roomNamesMutex.Lock()
-
-	_, ok := roomNamesCache[roomName]
-
-	if !ok {
-		roomNamesCache[roomName] = &RoomNameCacheItem{
-			roomNameLock:        sync.Mutex{},
-			lastCheckTimestamp:  time.Now().UnixNano(),
-			backendInstanceAddr: "",
-		}
-	}
-
-	roomNamesMutex.Unlock()
 
 	//make copy of unavailableBackendsTracking to use during this check (cuz concurrent routines may also use this map)
 	//Update original map with possible new values after this routine ends
@@ -138,10 +121,27 @@ func ValidateRoomAndPickBackend(roomName string) PickBackendResponse {
 	//put newly found dead backends here, after this routine exists this map's entries should be added to original "unavailableBackendsTracking" map
 	newlyFoundUnavailableBackends := make(map[string]int64)
 
-	//find room cache item, lock it, get picked backend instance
-	//or if none picked yet - pick and thus "load" cache
+	/* Pick backend for room name:
+	find room cache item, lock it, get picked backend instance
+	or if none picked yet - do pick and thus "load" cache */
 
-	cacheItem := roomNamesCache[roomName]
+	roomNamesMutex.Lock()
+
+	knownExistingRoomNames := gatherKnownExistingRoomNames()
+
+	cacheItem, found := roomNamesCache[roomName]
+
+	if !found {
+		cacheItem = &RoomNameCacheItem{
+			roomNameLock:        sync.Mutex{},
+			lastCheckTimestamp:  time.Now().UnixNano(),
+			backendInstanceAddr: "",
+		}
+
+		roomNamesCache[roomName] = cacheItem
+	}
+
+	roomNamesMutex.Unlock()
 
 	cacheItem.roomNameLock.Lock()
 	defer func() {
@@ -201,7 +201,8 @@ func ValidateRoomAndPickBackend(roomName string) PickBackendResponse {
 
 	if cacheItem.backendInstanceAddr == "" || roomDisappearedFromBackend {
 		//if failed to query some backend - it just wont be in this map
-		hwStatusResponsesByInstance := queryAllBackendsForHwStatus(roomName, &unavailableBackendsTrackingCopy, &newlyFoundUnavailableBackends)
+		hwStatusResponsesByInstance := queryAllBackendsForHwStatus(
+			roomName, &unavailableBackendsTrackingCopy, &newlyFoundUnavailableBackends)
 
 		if len(hwStatusResponsesByInstance) == 0 {
 			util.LogSevere("Error while querying backends for for 'hw status', all requests failed")
@@ -243,24 +244,51 @@ func ValidateRoomAndPickBackend(roomName string) PickBackendResponse {
 		}
 	}
 
+	// returning copy of string from within cache item while it is under lock, so thread-safe
 	return PickBackendResponse{
 		BackendInstanceAddr:          cacheItem.backendInstanceAddr,
 		ErrorMessage:                 "",
-		AlternativeRoomNamePostfixes: findAlternativeRoomNamePostfixes(roomName),
+		AlternativeRoomNamePostfixes: findAlternativeRoomNamePostfixes(roomName, knownExistingRoomNames),
+	}
+}
+
+// this is a simple method that just checks if room is known to exist on some backend at some point.
+// used for direct message retrieval with loose room/backend relation guaranty
+func GetRoomBackend(roomName string) PickBackendResponse {
+	roomNamesMutex.Lock()
+
+	cacheItem, ok := roomNamesCache[roomName]
+
+	roomNamesMutex.Unlock()
+
+	if !ok {
+		return PickBackendResponse{
+			BackendInstanceAddr:          "",
+			ErrorMessage:                 "failed to identify backend for requested room",
+			AlternativeRoomNamePostfixes: []string{},
+		}
+	}
+
+	cacheItem.roomNameLock.Lock()
+	defer cacheItem.roomNameLock.Unlock()
+
+	// returning copy of string from within cache item while it is under lock, so thread-safe
+	return PickBackendResponse{
+		BackendInstanceAddr:          cacheItem.backendInstanceAddr,
+		ErrorMessage:                 "",
+		AlternativeRoomNamePostfixes: []string{},
 	}
 }
 
 // creates list of postfixes to propose alternative room names. E.g. if "myroom" is taken - propose "myroom-2", "myroom-100" etc.
-func findAlternativeRoomNamePostfixes(roomName string) []string {
+func findAlternativeRoomNamePostfixes(roomName string, knownExistingRoomNames []string) []string {
 	alternativeRoomNamePostfixes := make([]string, 0)
 	freePostfixesFound := 0
-
-	roomNamesMutex.Lock()
 
 	for i := 2; i < 10; i++ {
 		iStr := strconv.Itoa(i)
 
-		if _, exists := roomNamesCache[roomName+"-"+iStr]; !exists {
+		if !util.ArrayContains(knownExistingRoomNames, roomName+"-"+iStr) {
 			alternativeRoomNamePostfixes = append(alternativeRoomNamePostfixes, iStr)
 			freePostfixesFound++
 		}
@@ -273,7 +301,7 @@ func findAlternativeRoomNamePostfixes(roomName string) []string {
 	for i := 100; i < 9999999; i++ {
 		iStr := strconv.Itoa(i)
 
-		if _, exists := roomNamesCache[roomName+"-"+iStr]; !exists {
+		if !util.ArrayContains(knownExistingRoomNames, roomName+"-"+iStr) {
 			alternativeRoomNamePostfixes = append(alternativeRoomNamePostfixes, iStr)
 			freePostfixesFound++
 		}
@@ -284,15 +312,15 @@ func findAlternativeRoomNamePostfixes(roomName string) []string {
 
 	}
 
-	roomNamesMutex.Unlock()
-
 	return alternativeRoomNamePostfixes
 }
 
-func queryAllBackendsForHwStatus(roomName string,
+func queryAllBackendsForHwStatus(
+	roomName string,
 	unavailableBackendsTrackingCopy *map[string]int64,
 	newlyFoundUnavailableBackends *map[string]int64,
 ) map[string]HwStatusInfo {
+	newlyFoundUnavailableBackendsMutex := sync.Mutex{}
 
 	hwStatusResponsesByInstance := make(map[string]HwStatusInfo, 0)
 	hwStatusResponsesMutex := sync.Mutex{}
@@ -322,30 +350,28 @@ func queryAllBackendsForHwStatus(roomName string,
 					util.LogSevere("ERROR: After 2nd attempt - failed to query backend '%s' for 'hw status'. Error: %s",
 						backendInstance, err)
 
+					newlyFoundUnavailableBackendsMutex.Lock()
 					(*newlyFoundUnavailableBackends)[backendInstance] = time.Now().UnixNano()
+					newlyFoundUnavailableBackendsMutex.Unlock()
+
 					go util.NotifyBackendUnavailable(backendInstance)
 				}
 			}
 
 			//skip backend from result map if failed to query it or got -1 values
 
-			gotEmptyValues := err == nil && (hwStatusResponse.AvgRecentCPUUsagePerc == -1 || hwStatusResponse.LastRamUsagePerc == -1)
+			gotEmptyValues := err == nil &&
+				(hwStatusResponse.AvgRecentCPUUsagePerc == -1 || hwStatusResponse.LastRamUsagePerc == -1)
 
 			if gotEmptyValues {
 				util.LogSevere("ERROR: backend '%s' failed to calculate current CPU('%d') or RAM('%d') load",
 					backendInstance, hwStatusResponse.AvgRecentCPUUsagePerc, hwStatusResponse.LastRamUsagePerc)
 			}
 
-			//max users online is a general limit + safeguard for reaching OS file descriptors limit (it doesnt count exactly sockets but should be enough)
-			tooManyUsersOnBackend := hwStatusResponse.UsersOnline >= MaxUsersOnlinePerBackend
+			//check backend stats, notify
+			isBackendInFatalState := performBackendStatsChecks(backendInstance, &hwStatusResponse)
 
-			if tooManyUsersOnBackend {
-				util.LogSevere("ERROR: backend '%s' has >= maximum allowed users connected: %d", backendInstance, MaxUsersOnlinePerBackend)
-
-				go util.NotifyBackendIsFull(backendInstance)
-			}
-
-			if err == nil && !gotEmptyValues && !tooManyUsersOnBackend {
+			if err == nil && !gotEmptyValues && !isBackendInFatalState {
 				hwStatusResponsesMutex.Lock()
 				hwStatusResponsesByInstance[backendInstance] = hwStatusResponse
 				hwStatusResponsesMutex.Unlock()
@@ -356,6 +382,42 @@ func queryAllBackendsForHwStatus(roomName string,
 	waitGroup.Wait()
 
 	return hwStatusResponsesByInstance
+}
+
+func performBackendStatsChecks(backendInstance string, hwStatusResponse *HwStatusInfo) bool {
+	isFatal := false
+
+	//max users online is a general limit + safeguard for reaching OS file descriptors limit (it doesnt count exactly sockets but should be enough)
+	tooManyUsersOnBackend := hwStatusResponse.UsersOnline >= MaxUsersOnlinePerBackend
+
+	if tooManyUsersOnBackend {
+		util.LogSevere("ERROR: backend '%s' has >= maximum allowed users connected: %d", backendInstance, MaxUsersOnlinePerBackend)
+
+		go util.NotifyBackendIsFull(backendInstance)
+
+		isFatal = true
+	}
+
+	if hwStatusResponse.UsersOnline >= ConcurrentBackendUsersNotificationThreshold {
+		util.LogInfo("Concurrent users threshold reached (%s) on backend '%s', sending email notification",
+			ConcurrentBackendUsersNotificationThreshold, backendInstance)
+
+		go util.NotifyUsersCountReached(backendInstance, ConcurrentBackendUsersNotificationThreshold)
+	}
+
+	if hwStatusResponse.AvgRecentCPUUsagePerc >= MaxBackendRecentCPULoadPercentUntilWarning {
+		util.LogWarn("WARN: backend '%s' has >= %d percent recent CPU load", backendInstance, MaxBackendRecentCPULoadPercentUntilWarning)
+
+		go util.NotifyBackendCpuOverload(backendInstance)
+	}
+
+	if hwStatusResponse.LastRamUsagePerc >= MaxBackendRecentRAMUsagePercentUntilWarning {
+		util.LogWarn("WARN: backend '%s' has >= %d percent recent RAM usage", backendInstance, MaxBackendRecentRAMUsagePercentUntilWarning)
+
+		go util.NotifyBackendRamOverload(backendInstance)
+	}
+
+	return isFatal
 }
 
 func getHwInfoStatusFromBackend(backendInstance string, roomName string) (HwStatusInfo, error) {
@@ -384,6 +446,9 @@ func getHwInfoStatusFromBackend(backendInstance string, roomName string) (HwStat
 
 			return hwStatusResponse, err
 		}
+
+		util.LogTrace("Got HW status response from backend '%s'. avg CPU: '%f', RAM: '%f', usersOnline: '%d'",
+			backendInstance, hwStatusResponse.AvgRecentCPUUsagePerc, hwStatusResponse.LastRamUsagePerc, hwStatusResponse.UsersOnline)
 
 		return hwStatusResponse, nil
 	}
@@ -430,34 +495,13 @@ outer:
 	}
 }
 
-func validateRoomName(roomName string) string {
-	roomNameTrimmed := strings.TrimSpace(roomName)
+// must be executed under room names cache lock
+func gatherKnownExistingRoomNames() []string {
+	knownExistingRoomNames := make([]string, 0, len(roomNamesCache))
 
-	errorMessage := ""
-
-	roomNameDecoded, _ := url.QueryUnescape(roomNameTrimmed)
-
-	if len([]rune(roomNameDecoded)) < RoomCredsMinChars || len([]rune(roomNameDecoded)) > RoomCredsMaxChars {
-		errorMessage = fmt.Sprintf("room name length must be between %d and %d", RoomCredsMinChars, RoomCredsMaxChars)
+	for roomNameKey := range roomNamesCache {
+		knownExistingRoomNames = append(knownExistingRoomNames, roomNameKey)
 	}
 
-	if util.ArrayContains(config.AppConfig.ForbiddenRoomNames, roomNameTrimmed) {
-		errorMessage = "this room name is forbidden"
-	}
-
-	allCharsAllowed := true
-
-	for _, r := range roomNameTrimmed {
-		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && !util.ArrayContains(allowedRoomNameSpecialChars, string(r)) {
-			allCharsAllowed = false
-			break
-		}
-	}
-
-	if !allCharsAllowed {
-		errorMessage = "invalid room name: allowed only letters, numbers " +
-			"and special characters: " + strings.Join(allowedRoomNameSpecialChars, " ")
-	}
-
-	return errorMessage
+	return knownExistingRoomNames
 }

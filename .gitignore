@@ -1,13 +1,6 @@
 # Mac OS X files
 .DS_Store
 
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
 # Test binary, build with `go test -c`
 *.test
 
@@ -41,11 +34,8 @@ file-srv/out/file-srv-out
 #test
 load-testing/test_client/target/*
 
-#config-srv
-archive/config-srv/target/
-archive/config-srv/dist/config-srv/config-srv-1.0.jar
-archive/config-srv/dist/config-srv/libs/*.jar
-
 #visual studio
-.vs
-platforms/win/Win32_GettingStarted/.vs/
+.vscode/
+.vs/
+
+

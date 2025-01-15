@@ -897,6 +897,19 @@ var AnonNames = []string{
 	"Zorse",
 }
 
+var ExternalUserName = "external-user"
+var ExternalUserUUID = "00000000-0000-0000-0000-000000000000"
+var ExternalUserSessionUUID = "fc78e1b2-decb-4a6c-ad6e-806be06e68ce"
+
+var ForbiddenUserNames = []string{
+	"admin",
+	"administrator",
+	"moderator",
+	"system",
+	"myinstantchat",
+	ExternalUserName,
+}
+
 // must be executed under room lock
 func validateOrPickRoomUserName(providedUserName string, room *domain_structures.Room) (string, bool, error) {
 
@@ -908,8 +921,12 @@ func validateOrPickRoomUserName(providedUserName string, room *domain_structures
 			return "", false, BadNameLength
 		}
 
+		if util.ArrayContainsString(ForbiddenUserNames, strings.ToLower(providedUserName)) {
+			return "", false, ProvidedNameTaken //shortcut
+		}
+
 		for _, authorizedUser := range room.AllRoomAuthorizedUsersBySessionUUID {
-			if strings.ToLower(authorizedUser.UserName) == strings.ToLower(providedUserName) {
+			if strings.EqualFold(authorizedUser.UserName, providedUserName) {
 				return "", false, ProvidedNameTaken
 			}
 		}

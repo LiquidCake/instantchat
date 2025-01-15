@@ -100,23 +100,15 @@ func writeFrameToActiveRoomMembers(
 func writeMembersListChangedFrameToActiveRoomMembers(room *domain_structures.Room, skipSocketUUID *string) {
 	room.Lock()
 
-	var roomActiveUsersCopy []domain_structures.RoomUserDTO
-
-	for _, user := range room.AllRoomAuthorizedUsersBySessionUUID {
-		roomActiveUsersCopy = append(roomActiveUsersCopy, domain_structures.RoomUserDTO{
-			UserInRoomUUID: &(*user).UserInRoomUUID,
-			UserName:       &(*user).UserName,
-			IsAnonName:     &(*user).IsAnonName,
-			IsOnlineInRoom: isUserOnlineInRoom(room, (*user).UserInRoomUUID),
-		})
-	}
+	//copy room active users list
+	allRoomUsersCopy := copyAllRoomUsersList(room)
 
 	createdAt := time.Now().UnixNano()
 
 	roomMembersListChangedDispatchingFrame := &domain_structures.OutMessageFrame{
 		Command:       domain_structures.RoomMembersChanged,
 		CreatedAtNano: &createdAt,
-		AllRoomUsers:  &roomActiveUsersCopy,
+		AllRoomUsers:  allRoomUsersCopy,
 	}
 
 	roomActiveClientSocketsByUUID := room.CopyActiveClientSocketMapNonLocking()
@@ -124,10 +116,7 @@ func writeMembersListChangedFrameToActiveRoomMembers(room *domain_structures.Roo
 	room.Unlock()
 
 	if skipSocketUUID != nil {
-		if _, found := (*roomActiveClientSocketsByUUID)[*skipSocketUUID]; found {
-			delete(*roomActiveClientSocketsByUUID, *skipSocketUUID)
-		}
-
+		delete(*roomActiveClientSocketsByUUID, *skipSocketUUID)
 	}
 
 	writeFrameToActiveRoomMembers(roomMembersListChangedDispatchingFrame, room, roomActiveClientSocketsByUUID)
@@ -147,7 +136,7 @@ func writeRoomDescriptionChangedFrameToActiveRoomMembers(room *domain_structures
 	roomDescriptionChangedDispatchingFrame := &domain_structures.OutMessageFrame{
 		Command:                   domain_structures.RoomChangeDescription,
 		RoomCreatorUserInRoomUUID: roomCreatorUserInRoomUUID,
-		ServerStatus:              &ServerStatus,
+		ServerStatus:              &newServerStatus,
 		Message: &[]domain_structures.RoomMessageDTO{
 			{Text: &room.Description},
 		},
@@ -164,12 +153,16 @@ func writeNotificationToActiveRoomMembers(
 	command domain_structures.Command,
 	room *domain_structures.Room,
 	roomActiveClientSocketsByUUID *map[string]*domain_structures.WebSocket,
+	additionalInfo *string,
 ) {
 	createdAt := time.Now().UnixNano()
 
 	notificationDispatchingFrame := &domain_structures.OutMessageFrame{
 		Command:       command,
 		CreatedAtNano: &createdAt,
+		Message: &[]domain_structures.RoomMessageDTO{
+			{Text: additionalInfo},
+		},
 	}
 
 	writeFrameToActiveRoomMembers(notificationDispatchingFrame, room, roomActiveClientSocketsByUUID)

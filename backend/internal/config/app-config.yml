@@ -1,13 +1,13 @@
-#even for local setup - set local machine's IP to 'allowedOrigins' and use it instead of localhost
+#even for local setup - set local machine's IP to 'allowedOrigins' and use it instead of localhost. NO TRAILING SLASHES
 allowedOrigins:
-  - http://192.168.1.100
+  - https://myinstantchat.org
 
-domain: "192.168.1.100"
+domain: "myinstantchat.org"
 
-httpSchema: "http"
+httpSchema: "https"
 
 http:
-  port: ":8080"
+  port: ":443"
   timeoutSec: 30
 
 shutdownWaitTimeoutSec: 10
@@ -25,9 +25,15 @@ forbiddenRoomNames:
   - hw
   - dashboards
   - about
+  - terms-of-service
+  - privacy-policy
   - control_page_proxy
   - favicon.ico
   - ctrl_command
+  - connection-methods
+  - app-win
+  - app-win-version
+  - direct_retrieval
 
-ctrlAuthLogin: "admin111"
-ctrlAuthPasswd: "password111"
+ctrlAuthLogin: "admin132"
+ctrlAuthPasswd: "password132"

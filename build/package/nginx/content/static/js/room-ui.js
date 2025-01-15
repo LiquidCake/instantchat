@@ -12,9 +12,6 @@ const SELECTION_CONTROLS_ADAPTION_OFFSET_FROM_MSG_TOP_PX = 2;
 
 const ROOM_TITLE_LINK_CHANGE_INPUT_TOUCHEND_DELAY = 200;
 
-const UI_THEME_LIGHT = 'light';
-const UI_THEME_DARK  = 'dark';
-
 /* Variables */
 
 /* DOM objects references */
@@ -36,6 +33,9 @@ const $roomTitleLinkChangeLinks = $('.room-title-link-change-link');
 const $topNotifBlock = $('.top-notif-msg');
 const $systemAlertNotifBlock = $('.system-alert-notif-msg');
 
+const $clientAgreementPopup = $('.client-agreement-popup');
+const $clientAgreementAcceptBtn = $('.client-agreement-accept-btn');
+
 const $messageContextMenu = $('.message-context-menu');
 const $messageContextMenuEditButton = $messageContextMenu.find('#message-tooltip-edit');
 const $messageContextMenuDeleteButton = $messageContextMenu.find('#message-tooltip-delete');
@@ -49,7 +49,15 @@ const $messageContextMenuDownloadDrawingButton = $messageContextMenu.find('#mess
 const $globalTransparentOverlay = $('.global-transparent-overlay');
 
 const $spinnerOverlayVersionChangedWr = $('.build-version-changed-wr');
+const $spinnerOverlayVersionChangedImg = $('.build-version-changed-img');
 const $spinnerOverlayRoomUserDuplicationWr = $('.room-user-duplication-wr');
+const $spinnerOverlayRoomUserDuplicationImg = $('.room-user-duplication-img');
+const $spinnerOverlayMesagesBackupWr = $('.spinner-overlay-backup-wr');
+const $spinnerOverlayMesagesBackupImg = $('.spinner-overlay-backup-img');
+
+const $confirmModalWr = $('.user-confirm-modal-wr');
+const $confirmModalText = $('.user-confirm-modal-text');
+const $confirmModalBtn = $('#confirm-modal-btn');
 
 const $containerMain = $('.container-main');
 const $containerMainCenterWr = $('.container-main-center-wr');
@@ -75,11 +83,13 @@ const $roomInfoWr = $('.room-info-wr');
 const $roomInfoOnlineUsers = $('.room-info-online-users');
 const $roomInfoWrMainNavbar = $('.room-info-wr-main-navbar');
 const $roomInfoCollapseWr = $('.room-info-addit-bot-collapse-wr');
-const $roomInfoCollapseShareImg = $('.room-info-addit-bot-collapse-share-img');
+const $roomInfoCollapsePasswordNote = $('.room-info-addit-bot-collapse-password-note');
 const $roomInfoCreationTime = $('.room-info-addit-creation-time');
 const $roomInfoUsersCount = $('.room-info-addit-users-count');
 const $roomInfoLeaveRoomBtn = $('.room-info-addit-mid-right-buttons-leave');
 const $roomInfoShareRoomBtn = $('.room-info-addit-share-btn');
+const $roomInfoOverlayKeyWr = $('.room-info-overlay-key-wr');
+const $roomInfoOverlayKeyIndicator = $('.room-info-overlay-key-indication');
 
 const $roomInfoDescription = $('.room-descr');
 const $roomInfoDescriptionText = $('.room-descr-text');
@@ -104,6 +114,9 @@ const $userMessageTextarea = $userMessageWr.find('.user-message-textarea');
 
 const $userMessageCollapseWr = $userMessageWr.find('.user-message-wr-collapse-wr');
 const $userMessageCollapseWrSendingIndication = $userMessageWr.find('.user-message-wr-collapse-sending-indication');
+const $userMessageCollapsePreview = $userMessageWr.find('.user-message-collapse-preview');
+const $userMessageCollapseCompactToggleLabel = $userMessageWr.find('.user-message-collapse-compact-toggle-label');
+const $userMessageCollapseCompactToggleCheckbox = $userMessageWr.find('#user-message-collapse-compact-toggle');
 
 const $toggleSearchButton = $('.user-message-wr-toggle-search');
 const $searchBarWr = $('.search-bar-wr');
@@ -160,6 +173,10 @@ const $botsAddNewBtn = $('.bots-add-new-bnt');
 const $botsExampleWr = $('.bot-example-wr');
 const $botsEmptyBotForCloningBlock = $('.empty-bot-dom-for-cloning');
 
+const $toggleUserInputDrawingButton = $('.user-message-wr-toggle-input-drawing');
+
+const $messagesBackupButton = $('.user-message-wr-backup');
+
 
 /* vars */
 
@@ -167,8 +184,6 @@ let isMobileClientDevice;
 let onResizeTimeout;
 let onBotConfigChangedTimeout;
 let onMessagesWrapperScrollTimeout;
-
-let selectedUITheme = UI_THEME_LIGHT;
 
 let topNotificationsQueue = [];
 
@@ -180,6 +195,8 @@ let needToFocusRoomChangeInput = false;
 let isNavbarInBigMode = true;
 
 let roomTitleLinkChangeInputLastTouchEndAt = 0;
+
+let isInUserMessageCompactMode = false;
 
 //store DOM elements for period when they must be detached from DOM
 let mainNavbarChildrenBlocks;
@@ -326,7 +343,7 @@ function initRoomPageUI () {
     if (isMobileClientDevice) {
         //hide Room Info on mobile by default
         $roomInfoWr.css('display', 'none');
-        $roomInfoCollapseShareImg.removeClass('d-none');
+        getRoomInfoCollapseShareImgBlock().removeClass('d-none');
         $roomTitleLinks.addClass('room-title-link-padded-right');
 
         resizeWrappersHeight(true);
@@ -335,7 +352,7 @@ function initRoomPageUI () {
         //hide Room Info on desktop if height is low
         if (currentViewportHeight < DESKTOP_ROOM_INFO_SHOW_SCREEN_MIN_HEIGHT_PX) {
             $roomInfoWr.css('display', 'none');
-            $roomInfoCollapseShareImg.removeClass('d-none');
+            getRoomInfoCollapseShareImgBlock().removeClass('d-none');
             $roomTitleLinks.addClass('room-title-link-padded-right');
         } else {
             $roomTitleLinks.removeClass('room-title-link-padded-right');
@@ -357,6 +374,14 @@ function initRoomPageUI () {
             }
         );
     }
+
+    tryShowRoomInfoOverlayKeyWr();
+
+    $roomInfoOverlayKeyWr.on('click', function () {
+        $roomInfoOverlayKeyWr.addClass('d-none');
+
+        setShowChangeOverlayModeFlag(false);
+    });
 
 
     /* Set user message UI behaviour */
@@ -390,27 +415,11 @@ function initRoomPageUI () {
         }
     });
 
-    //if applicable - show 'zoom' top notification
     if (!isMobileClientDevice) {
-        const zoomNotificationLastShownAt = LOCAL_STORAGE.getItem(ZOOM_NOTIF_LAST_SHOWN_AT_LOCAL_STORAGE_KEY);
-        const currentTimeMills = new Date().getTime();
-
-        if (
-            !zoomNotificationLastShownAt
-            || currentTimeMills > (parseInt(zoomNotificationLastShownAt) + (MILLS_IN_HOUR * 72))
-        ) {
-            setTimeout(function () {
-                LOCAL_STORAGE.setItem(ZOOM_NOTIF_LAST_SHOWN_AT_LOCAL_STORAGE_KEY, currentTimeMills);
-
-                showTopNotification(NOTIFICATION_TEXT_ZOOM, TOP_NOTIFICATION_SHOW_MS * 3, false);
-            }, 20000);
-        }
-    }
-
-    if (!isMobileClientDevice) {
+        //highlight user message wrapper block while hovering on collapse panel
         $userMessageCollapseWr.hover(
             function () {
-                if ($userMessageWr.css('display') !== 'none') {
+                if ($userMessageWr.css('display') !== 'none' && !$userMessageCollapseCompactToggleLabel.is(":hover")) {
                     $userMessageWr.css('opacity', '0.6');
                 }
             },
@@ -421,10 +430,39 @@ function initRoomPageUI () {
                 }
             }
         );
+        $userMessageCollapseCompactToggleLabel.hover(
+            function () {
+                if ($userMessageWr.css('display') !== 'none') {
+                    $userMessageWr.css('opacity', '1');
+                }
+        });
     }
 
-    $userMessageCollapseWr.on('click', toggleUserMessageBlock);
+    $userMessageCollapseWr.on('click', function (e) {
+        toggleUserMessageBlock();
+    });
 
+    /* user message compact mode */
+
+    const userMessageCompactModeLocalStorageVal = LOCAL_STORAGE.getItem(USER_MESSAGE_COMPACT_MODE_SET_LOCAL_STORAGE_KEY);
+
+    if (userMessageCompactModeLocalStorageVal === 'true') {
+        $userMessageCollapseCompactToggleCheckbox.prop('checked', true);
+        toggleUserMessageCompactMode(true);
+    }
+
+    $userMessageCollapseCompactToggleCheckbox.on('change', function (e) {
+        stopPropagationAndDefault(e);
+
+        const isCheckboxActivated = $userMessageCollapseCompactToggleCheckbox.prop('checked');
+        LOCAL_STORAGE.setItem(USER_MESSAGE_COMPACT_MODE_SET_LOCAL_STORAGE_KEY, isCheckboxActivated);
+
+        toggleUserMessageCompactMode(isCheckboxActivated);
+    });
+
+   $userMessageCollapseCompactToggleLabel.on('click', function (e) {
+      e.stopPropagation();
+   });
 
     /* Set Menu and Folk Picks blocks toggle behaviour */
 
@@ -463,6 +501,16 @@ function initRoomPageUI () {
 
     $recentRoomsClose.on('click', function () {
         hideMyRecentRoomsPopup();
+    });
+
+    $preferencesLink.on('click', function () {
+        hideMenuMobile();
+        hideFolkPicksMobile();
+        showPreferencesPopup();
+    });
+
+    $preferencesClose.on('click', function () {
+        hidePreferencesPopup();
     });
 
     $botsWrClose.on('click', function () {
@@ -547,7 +595,7 @@ function initRoomPageUI () {
     $roomInfoShareRoomBtn.on('click', function () {
         if (isMobileClientDevice && navigator.share) {
             navigator.share({
-                title: ROOM_NAME + ' - Instantchat',
+                title: ROOM_NAME + ' - Myinstantchat',
                 url: $shareRoomManualURL.text()
 
             }).catch(function () {
@@ -563,20 +611,40 @@ function initRoomPageUI () {
     $shareRoomBtn.on('click', copyRoomFastLink);
 
     $roomInfoDescriptionCreatorChangeInput.on('focusin', function () {
-        $roomInfoDescription.css('border-color', '#3b3b3b');
+        $roomInfoDescription.removeClass('room-descr-border-normal');
+        $roomInfoDescription.addClass('room-descr-border-highlighted');
     });
 
     $roomInfoDescriptionCreatorChangeInput.on('focusout', function () {
-        $roomInfoDescription.css('border-color', '#FCFCFC');
+        $roomInfoDescription.addClass('room-descr-border-normal');
+        $roomInfoDescription.removeClass('room-descr-border-highlighted');
     });
 
     $toggleSearchButton.on('mousedown', toggleTextSearchUI);
 
     $toggleBotsButton.on('mousedown', toggleBotsUI);
 
+    $messagesBackupButton.on('mousedown', function () {
+        if (getRoomMessagesForBackupCount()) {
+            showConfirmModalWindow(
+                'please confirm downloading room messages file',
+                'download',
+                backupRoomMessages
+            );
+        } else {
+            showConfirmModalWindow(
+                'room has no messages',
+                'ok',
+                function () {}
+            );
+        }
+    });
+
     $toggleSmilesButton.on('mousedown', toggleSmilesUI);
 
     $toggleUserInputDrawingButton.on('mousedown', toggleUserInputDrawingUI);
+
+    $spinnerOverlayMesagesBackupImg.on('mousedown', backupRoomMessages);
 
     $mobileTextSelectionToMessageOverlayTopBlock.on('click', function () {
         const $messageBlock = findMessageBlockById(messageTextSelectionInProgressId);
@@ -593,10 +661,10 @@ function initRoomPageUI () {
         }
     });
 
-    $spinnerOverlayVersionChangedWr.on('click', function () {
+    $spinnerOverlayVersionChangedImg.on('click', function () {
         reloadPage();
     });
-    $spinnerOverlayRoomUserDuplicationWr.on('click', function () {
+    $spinnerOverlayRoomUserDuplicationImg.on('click', function () {
         reloadPage();
     });
 
@@ -631,6 +699,10 @@ function initRoomPageUI () {
         $drawingMainWr.addClass('user-drawing-input-wr-mobile');
     }
 
+    if (!USER_DRAWING_ENABLED) {
+        $toggleUserInputDrawingButton.addClass('d-none');
+    }
+
     initUIColorTheme();
 
     onResizeActions();
@@ -644,7 +716,11 @@ function navigateViaRoomTitleChangeInput () {
     }
 }
 
-function showUserNameChangingBlock() {
+function showUserNameChangingBlock () {
+    if (isInUserMessageCompactMode) {
+        manuallyTriggerUserMessageCompactMode(false);
+    }
+
     cancelMessageEdit();
 
     $userJoinedAsNameWr.addClass('d-none');
@@ -658,7 +734,7 @@ function showUserNameChangingBlock() {
     resizeWrappersHeight(true);
 }
 
-function hideUserNameChangingBlock() {
+function hideUserNameChangingBlock () {
     $userJoinedAsChangeWr.addClass('d-none');
     setUserNameChangingInputToCurrentValue();
 }
@@ -855,14 +931,14 @@ function showFolkPicksMobile() {
         $folkPicksWr.css('display', 'block');
         showMainOverlay();
 
-        hideMobileKeyboard();
+        deactivateUserMessageInput();
 
         resizeWrappersHeight();
     }
 }
 
 function showMenuMobileInRoom() {
-     hideMobileKeyboard();
+     deactivateUserMessageInput();
 
      showMenuMobile();
 }
@@ -956,6 +1032,7 @@ function copyRoomFastLink () {
     );
 }
 
+
 function copyStringToClipboard (strToCopy, successCallback, errorCallback) {
     const textarea = document.createElement("textarea");
 
@@ -1002,7 +1079,7 @@ function toggleRoomInfoBlock(e) {
 
         //if current toggling means collapsing
         if ($roomInfoWr.css('display') === 'none') {
-            $roomInfoCollapseShareImg.removeClass('d-none');
+            getRoomInfoCollapseShareImgBlock().removeClass('d-none');
 
             hideRoomNameChangeInput();
         } else {
@@ -1010,7 +1087,7 @@ function toggleRoomInfoBlock(e) {
                 changeNavbarMode(currentViewportHeight > NAVBAR_COMPACT_MODE_MAX_HEIGHT_PX);
             }
 
-            $roomInfoCollapseShareImg.addClass('d-none');
+            getRoomInfoCollapseShareImgBlock().addClass('d-none');
 
             showRoomNameChangeInput();
         }
@@ -1021,13 +1098,73 @@ function toggleRoomInfoBlock(e) {
     });
 }
 
-function toggleUserMessageBlock() {
+function showUserMessageBlock () {
+    if (!isUserMessageBlockCollapsed()) {
+        return;
+    }
+
     cancelMessageTextSelectionMode();
     scrollChatBottom();
 
-    $userMessageContentWr.slideToggle('fast', function () {
-        resizeWrappersHeight(true);
-    });
+    if (isInUserMessageCompactMode) {
+        $userMessageContentWr.css('display', '');
+
+        doShowUserMessageBlock();
+    } else {
+        $userMessageContentWr.slideToggle('fast', doShowUserMessageBlock);
+    }
+}
+
+function doShowUserMessageBlock () {
+    //user message changed to full size
+
+    $userMessageCollapsePreview.addClass('d-none');
+
+    //if in user message compact mode - activate textarea for instant access.
+    //Else - just change user message block to full size
+    if (isInUserMessageCompactMode) {
+        activateUserMessageInput();
+    }
+
+    resizeWrappersHeight(true);
+}
+
+function hideUserMessageBlock () {
+    if (isUserMessageBlockCollapsed()) {
+        return;
+    }
+
+    cancelMessageTextSelectionMode();
+    scrollChatBottom();
+
+    if (isInUserMessageCompactMode) {
+        $userMessageContentWr.css('display', 'none');
+
+        doHideUserMessageBlock();
+    } else {
+        $userMessageContentWr.slideToggle('fast', doHideUserMessageBlock);
+    }
+}
+
+function doHideUserMessageBlock () {
+    //user message changed to collapsed
+
+    if (isInUserMessageCompactMode) {
+        $userMessageCollapsePreview.removeClass('d-none');
+    }
+
+    const currentUserMessageText = $userMessageTextarea.val();
+    propagateUserMessageTextToCollapsedPreview(currentUserMessageText);
+
+    resizeWrappersHeight(true);
+}
+
+function toggleUserMessageBlock () {
+    if (isUserMessageBlockCollapsed()) {
+        showUserMessageBlock();
+    } else {
+        hideUserMessageBlock();
+    }
 }
 
 function showError(message, notificationShowTimeMs) {
@@ -1153,7 +1290,7 @@ function createTextMessageDom(textMessage, userName, isAnon, originalMessageShor
     }
 
     const $messageWrBlock = $('<div class="room-msg-wr">');
-    $messageWrBlock.append('<div class="message-marks-wr">');
+    $messageWrBlock.append('<div class="message-marks-wr"><span class="msg-adm-mark d-none">adm</span></div>');
 
 
     /* Message id / name / time */
@@ -1288,7 +1425,41 @@ function hideRoomDescriptionEditingBlock () {
     }
 }
 
-function hideMobileKeyboard() {
+function activateUserMessageInputAfterWindowWasActivated () {
+    $messageContextMenu.addClass('d-none');
+    hideFolkPicksMobile();
+    hideMenuMobile();
+    hideMyRecentRoomsPopup();
+    hidePreferencesPopup();
+    hideShareRoomPopup();
+    hideUserInputDrawingBlock();
+    hideBotsUI();
+
+    $globalTransparentOverlay.addClass('d-none');
+    cancelActionsUnderGlobalTransparentOverlay();
+
+    cancelMessageTextSelectionMode();
+
+    if (isInUserMessageCompactMode) {
+        showUserMessageBlock();
+    }
+
+    resizeWrappersHeight();
+
+    if (isInUserMessageCompactMode || !isUserMessageBlockCollapsed()) {
+        activateUserMessageInput();
+    }
+}
+
+function deactivateUserMessageInputAfterWindowWasDeactivated () {
+    deactivateUserMessageInput();
+}
+
+function activateUserMessageInput () {
+    $userMessageTextarea.focus();
+}
+
+function deactivateUserMessageInput () {
     $userMessageTextarea.focusout();
     document.activeElement.blur();
     $("input").blur();
@@ -1384,9 +1555,12 @@ function onSmileClick(e) {
     const $clickedSmile = $(e.target);
 
     if ($clickedSmile.length && $clickedSmile.hasClass('smile-wr')) {
+        stopPropagationAndDefault(e);
+
         $userMessageTextarea.val($userMessageTextarea.val() + $clickedSmile.text());
 
-        stopPropagationAndDefault(e);
+        const currentUserMessageText = $userMessageTextarea.val();
+        propagateUserMessageTextToCollapsedPreview(currentUserMessageText);
     }
 }
 
@@ -1395,9 +1569,9 @@ function toggleTextSearchUI () {
 
     if ($searchBarWr.hasClass('d-none')) {
         showTextSearchUI();
-    } else {
-        hideTextSearchUI();
 
+        manuallyTriggerUserMessageCompactMode(false);
+    } else {
         cancelTextSearch();
     }
 
@@ -1692,32 +1866,6 @@ function changeRoomTitleRoomChangeControls () {
     }
 }
 
-function initUIColorTheme() {
-    //light is default
-
-    //TODO this is kind of POC for now
-    if (selectedUITheme === UI_THEME_DARK) {
-        $body.addClass('gm-elite');
-
-        $(
-            '.room-messages-wr, ' +
-            '.room-messages-init-msg, ' +
-            '.user-message-textarea-wr, ' +
-            '.room-descr-text, ' +
-            '.room-info-addit-mid-right-labels, ' +
-            '.room-msg-name-val, ' +
-            '.room-info-online-user-name, ' +
-            '.main-navbar, ' +
-            '.room-info-addit-mid-right-buttons-leave, ' +
-            '.main-sidebar-top-item-1, ' +
-            '.picks-wr, ' +
-            '.picks-messages-wr, ' +
-            '.picks-bot-wr, ' +
-            '.main-sidebar-wr'
-        ).addClass('gm-elite');
-    }
-}
-
 function loadUrlPreview (linkURL, $textMessage, messageId, needToScrollChatToBottom) {
     getUrlPreviewInfo(linkURL, function (urlInfoResp) {
         if (!urlInfoResp) {
@@ -1796,7 +1944,7 @@ function loadUrlPreviewIntoMessageBlock (urlInfoResp, $textMessageBlock, needToS
     }
 
     if (needToScrollChatToBottom && $image) {
-        $image.on('load', scrollChatBottom);
+        applyImageOnLoadCallback($image);
     }
 }
 
@@ -1861,10 +2009,6 @@ function isSwipedOnRoomChangeInput () {
     return new Date().getTime() <= (roomTitleLinkChangeInputLastTouchEndAt + ROOM_TITLE_LINK_CHANGE_INPUT_TOUCHEND_DELAY);
 }
 
-function showVersionChangedSpinner () {
-    $spinnerOverlayVersionChangedWr.removeClass('d-none');
-}
-
 function unBindMainOverlay () {
     $mainOverlay.off('click');
 }
@@ -1875,9 +2019,109 @@ function bindMainOverlay () {
         hideFolkPicksMobile();
         hideMenuMobile();
         hideMyRecentRoomsPopup();
+        hidePreferencesPopup();
         hideShareRoomPopup();
         hideUserInputDrawingBlock();
         hideBotsUI();
+        hideUserConfirmModal();
         //main overlay will be hidden as a result of one of above actions, so no need to hide it explicitly
     });
+}
+
+function tryShowRoomInfoOverlayKeyWr () {
+    if (getShowChangeOverlayModeFlag()) {
+        $roomInfoOverlayKeyWr.removeClass('d-none');
+    }
+}
+
+function changeRoomInfoOverlayKeyIndicator (newKeyName) {
+    $roomInfoOverlayKeyIndicator.text(newKeyName);
+}
+
+function isUserMessageBlockCollapsed () {
+    return $userMessageContentWr.css('display') === 'none';
+}
+
+function propagateUserMessageTextToCollapsedPreview (text) {
+    $userMessageCollapsePreview.text(text.trim() ? text : "message");
+}
+
+function toggleUserMessageCompactMode (newValueIsInCompactMode) {
+    const oldValueIsInCompactMode = isInUserMessageCompactMode;
+
+    isInUserMessageCompactMode = newValueIsInCompactMode;
+
+    if (!oldValueIsInCompactMode && isInUserMessageCompactMode) {
+       //switch from non-compact to compact
+        if (!isUserMessageBlockCollapsed()) {
+            hideUserMessageBlock();
+        } else {
+            $userMessageCollapsePreview.removeClass('d-none');
+        }
+
+        cancelTextSearch();
+    }
+
+    if (oldValueIsInCompactMode && !isInUserMessageCompactMode) {
+        //switch from compact to non-compact
+        if (isUserMessageBlockCollapsed()) {
+            showUserMessageBlock();
+        } else {
+            $userMessageCollapsePreview.addClass('d-none');
+        }
+    }
+}
+
+function manuallyTriggerUserMessageCompactMode (enable) {
+    $userMessageCollapseCompactToggleCheckbox.prop('checked', enable);
+    $userMessageCollapseCompactToggleCheckbox.trigger('change');
+}
+
+function getRoomInfoCollapseShareImgBlock () {
+  if (selectedUITheme === UI_THEME_DARK) {
+    return $('.room-info-addit-bot-collapse-share-img.image-theme-dark');
+  } else {
+    return $('.room-info-addit-bot-collapse-share-img.image-theme-light');
+  }
+}
+
+function applyImageOnLoadCallback ($image) {
+    if ($image && $image.length) {
+        $image.on('load', scrollChatBottom);
+    }
+}
+
+function removeImageOnLoadCallback ($image) {
+    if ($image && $image.length) {
+        $image.off('load');
+    }
+}
+
+function showConfirmModalWindow (titleText, buttonText, onClickCallback) {
+    $confirmModalText.text(titleText);
+
+    showMainOverlay();
+    showUserConfirmModal();
+
+    $confirmModalBtn.text(buttonText);
+
+    $confirmModalBtn.off('click');
+    $confirmModalBtn.on('click', function (e) {
+        onClickCallback(e);
+
+        hideMainOverlay();
+        hideUserConfirmModal();
+    });
+}
+
+function showUserConfirmModal () {
+    $confirmModalWr.removeClass('d-none');
+}
+
+function hideUserConfirmModal () {
+    $confirmModalWr.addClass('d-none');
+}
+
+function showCookieWarning () {
+    //empty
 }

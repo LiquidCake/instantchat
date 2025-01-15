@@ -1,28 +1,35 @@
 version: "3.2"
 
 volumes:
-  file-srv-files:
+  file-srv-files: {}
   prometheus_data: {}
   grafana_data: {}
 
 networks:
-  monitor-net:
+  instantchat-net:
+    driver: bridge
+  instantchat-monitor-net:
     driver: bridge
 
 services:
   aux-srv:
     image: aux-srv
-    restart: always
+    restart: unless-stopped
     environment:
       - LOG_LEVEL=INFO
       #- LOG_LEVEL=TRACE
       - LOG_FILE_NAME=aux-srv.log
+      - CTRL_AUTH_LOGIN=admin132
+      - CTRL_AUTH_PASSWD=password132
     ports:
       - '8090:8080'
+      - '10443:443'
     volumes:
       - type: bind
         source: /var/log/aux-srv
         target: /app/logs
+    networks:
+      - instantchat-net
     ulimits:
       nproc: 65535
       nofile:
@@ -31,13 +38,14 @@ services:
 
   file-srv:
     image: file-srv
-    restart: always
+    restart: unless-stopped
     environment:
       - LOG_LEVEL=INFO
       #- LOG_LEVEL=TRACE
       - LOG_FILE_NAME=file-srv.log
     ports:
       - '8085:8085'
+      - '11443:443'
     volumes:
       - type: volume
         source: file-srv-files
@@ -45,6 +53,8 @@ services:
       - type: bind
         source: /var/log/file-srv
         target: /app/logs
+    networks:
+      - instantchat-net
     ulimits:
       nproc: 65535
       nofile:
@@ -53,18 +63,23 @@ services:
 
   backend1:
     image: backend
-    restart: always
+    restart: unless-stopped
     environment:
       - INSTANCE_NUM=1
       - LOG_LEVEL=INFO
       #- LOG_LEVEL=TRACE
       - LOG_FILE_NAME=backend-1.log
+      - CTRL_AUTH_LOGIN=admin132
+      - CTRL_AUTH_PASSWD=password132
     ports:
       - '8080:8080'
+      - '12443:443'
     volumes:
       - type: bind
         source: /var/log/backend
         target: /app/logs
+    networks:
+      - instantchat-net
     ulimits:
       nproc: 65535
       nofile:
@@ -73,7 +88,7 @@ services:
 
   nginx:
     image: nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - '80:80'
       - '443:443'
@@ -81,6 +96,8 @@ services:
       - type: bind
         source: /var/log/nginx
         target: /var/log/nginx
+    networks:
+      - instantchat-net
     ulimits:
       nproc: 65535
       nofile:
@@ -93,6 +110,8 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
+    networks:
+      - instantchat-net
     command:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
@@ -106,7 +125,7 @@ services:
     logging:
       driver: "json-file"
       options:
-        max-size: "5m"
+        max-size: "100m"
 
   prometheus:
     image: prom/prometheus:v2.10.0
@@ -127,7 +146,7 @@ services:
     expose:
       - 9090
     networks:
-      - monitor-net
+      - instantchat-monitor-net
     labels:
       org.label-schema.group: "monitoring"
 
@@ -141,14 +160,14 @@ services:
       - ./grafana/setup.sh:/setup.sh
     entrypoint: /setup.sh
     environment:
-      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_METRICS_ENABLED=false
     restart: unless-stopped
     ports:
       - 3000:3000
     networks:
-      - monitor-net
+      - instantchat-monitor-net
     labels:
       org.label-schema.group: "monitoring"

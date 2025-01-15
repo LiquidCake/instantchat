@@ -20,6 +20,12 @@ let roomNameTypingTimer = null;
 function init () {
     keepAlive();
 
+    $roomFormTitle.on('click', function () {
+        if (window.chrome && window.chrome.webview) {
+             window.chrome.webview.postMessage("change_window_mode_keyF1");
+        }
+    });
+
     //get redirect variable (if any)
     const redirectVariableStr = LOCAL_STORAGE.getItem(REDIRECT_VARIABLE_LOCAL_STORAGE_KEY);
 

@@ -212,15 +212,10 @@ func (r *Room) CopyActiveClientSocketMap() (*map[string]*WebSocket, int64) {
 	r.Lock()
 	defer r.Unlock()
 
-	activeClientSocketsByUUIDCopy := make(map[string]*WebSocket, len(r.ActiveClientSocketsByUUID))
-
-	for k, v := range r.ActiveClientSocketsByUUID {
-		activeClientSocketsByUUIDCopy[k] = v
-	}
-
-	return &activeClientSocketsByUUIDCopy, time.Now().UnixNano()
+	return r.CopyActiveClientSocketMapNonLocking(), time.Now().UnixNano()
 }
 
+// must be called only under room lock
 func (r *Room) CopyActiveClientSocketMapNonLocking() *map[string]*WebSocket {
 	activeClientSocketsByUUIDCopy := make(map[string]*WebSocket, len(r.ActiveClientSocketsByUUID))
 

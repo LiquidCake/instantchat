@@ -1,16 +1,19 @@
 #!/bin/bash
 
-# Taken from https://github.com/grafana/grafana-docker/issues/74
-
 # Script to configure grafana datasources and dashboards.
 # Intended to be run before grafana entrypoint...
 # Image: grafana/grafana:4.1.2
 # ENTRYPOINT [\"/run.sh\"]"
 
-GRAFANA_URL=${GRAFANA_URL:-http://$GF_SECURITY_ADMIN_USER:$GF_SECURITY_ADMIN_PASSWORD@localhost:3000}
-#GRAFANA_URL=http://grafana-plain.k8s.playground1.aws.ad.zopa.com
+GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:-admin}
+GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
+
+GRAFANA_URL=${GRAFANA_URL:-http://${GF_SECURITY_ADMIN_USER}:${GF_SECURITY_ADMIN_PASSWORD}@localhost:3000}
+
 DATASOURCES_PATH=${DATASOURCES_PATH:-/etc/grafana/datasources}
 DASHBOARDS_PATH=${DASHBOARDS_PATH:-/etc/grafana/dashboards}
+
+MARKER_FILE=/var/lib/grafana/is-configured-marker-file
 
 # Generic function to call the Vault API
 grafana_api() {
@@ -33,7 +36,7 @@ wait_for_api() {
   while ! grafana_api GET /api/user/preferences
   do
     sleep 5
-  done 
+  done
 }
 
 install_datasources() {
@@ -76,7 +79,14 @@ configure_grafana() {
   install_dashboards
 }
 
-echo "Running configure_grafana in the background..."
-configure_grafana &
+if [[ -f "${MARKER_FILE}" ]]; then
+  echo "Grafana is already configured"
+else
+  touch ${MARKER_FILE}
+
+  echo "Running configure_grafana in the background..."
+  configure_grafana &
+fi
+
 /run.sh
 exit 0

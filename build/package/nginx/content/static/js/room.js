@@ -11,11 +11,21 @@ const TEXT_SEARCH_AREA_R_USER = 'reply-to-user-name';
 const TEXT_SEARCH_AREA_R_MESSAGE = 'reply-to-message-text';
 const TEXT_SEARCH_AREA_TEXT = 'text';
 
+const ROOM_PASSWORD_NOTE_PASSWORD_SET_TEXT = 'password set';
+const ROOM_PASSWORD_NOTE_PASSWORD_NOT_SET_TEXT = 'no password';
+
 const CLASS_MESSAGE_TO_CLEAN_UP = 'message-to-cleanup';
 
 /* Variables */
 
 let isRoomReconnectInProgress = false;
+
+let roomMessagesBackupInProgress = false;
+//user would normally download messages using current messageIdToTextSearchInfo, but this variable will keep copy of 
+// last available state of messageIdToTextSearchInfo, after disconnect happend and until re-connect (re-acquiring of 
+// all room messages at arrival of corresponding command)
+let roomMessagesBackupOfflineStorage = null;
+let roomMessagesBackupOfflineStoragesUsername = null;
 
 let clientBotsCluster;
 
@@ -146,6 +156,14 @@ function initializeVariables () {
 }
 
 function init () {
+    if (isUserAcceptedClientAgreement()) {
+        doInit();
+    } else {
+        showClientAgreement();
+    }
+}
+
+function doInit () {
     initializeVariables();
 
     keepAlive();
@@ -172,6 +190,8 @@ function init () {
         LOCAL_STORAGE.removeItem(REDIRECT_VARIABLE_LOCAL_STORAGE_KEY);
     }
 
+    $pageInitOverlay.remove();
+
     /* Create or join room, passed in page query path */
     createOrJoinRoom();
 
@@ -197,7 +217,7 @@ function init () {
         }
     });
 
-    $messageEditCancelButton.on('click', function (e) {
+    $messageEditCancelButton.on('mousedown', function (e) {
         stopPropagationAndDefault(e);
 
         const isChatAtBottom = isChatScrolledBottom();
@@ -206,15 +226,31 @@ function init () {
         resizeWrappersHeight(isChatAtBottom);
     });
 
-    $userJoinedAsNameWr.on('click', showUserNameChangingBlock);
-    $userJoinedAsTitle.on('click', showUserNameChangingBlock);
+    $userJoinedAsNameWr.on('mousedown', showUserNameChangingBlock);
+    $userJoinedAsTitle.on('mousedown', showUserNameChangingBlock);
 
     $userMessageTextarea.on('focusin', textareaSwitchToBigMode);
-    $userMessageTextarea.on('focusout', textareaSwitchToSmallMode);
+    $userMessageTextarea.on('focusout', function () {
+        if (isInUserMessageCompactMode) {
+            hideUserMessageBlock();
+        }
 
-    $answerToUserCloseButton.on('mousedown', cancelReplyToUser);
+        textareaSwitchToSmallMode();
+    });
 
-    $answerToMessageCloseButton.on('mousedown', cancelReplyToMessage);
+    $answerToUserCloseButton.on('mousedown', function (e) {
+        stopPropagationAndDefault(e);
+
+        cancelReplyToUser();
+        activateUserMessageInput();
+    });
+
+    $answerToMessageCloseButton.on('mousedown', function (e) {
+        stopPropagationAndDefault(e);
+
+        cancelReplyToMessage();
+        activateUserMessageInput();
+    });
 
     $searchBarPrevButton.on('click', textSearchPrev);
     $searchBarNextButton.on('click', textSearchNext);
@@ -300,6 +336,12 @@ function init () {
     /* Set text fields keyboard behaviour */
 
     $userMessageTextarea.on('keydown', function (e) {
+        if (e.which === parseInt(preferencesSelectedKeyCode)) {
+            stopPropagationAndDefault(e);
+
+            return;
+        }
+
         if (e.which === KEY_CODE_ARROW_UP) {
             if ($userMessageTextarea.val().trim() === '' && lastCurrentUserSentMessageId) {
                 const $lastCurrentUserSentMessageBlock = $roomMessagesWr.find('div[data-msg-id=' + lastCurrentUserSentMessageId + ']');
@@ -357,18 +399,41 @@ function init () {
             hideFolkPicksMobile();
             hideMenuMobile();
             hideMyRecentRoomsPopup();
+            hidePreferencesPopup();
             hideShareRoomPopup();
             hideUserInputDrawingBlock();
             hideBotsUI();
+            hideUserConfirmModal();
 
             $globalTransparentOverlay.addClass('d-none');
             cancelActionsUnderGlobalTransparentOverlay();
 
             cancelMessageTextSelectionMode();
 
+            cancelMessageEdit();
+
+            deactivateUserMessageInput();
+
             resizeWrappersHeight();
         }
     });
+
+    //if applicable - show 'zoom' top notification
+    if (!isMobileClientDevice) {
+        const zoomNotificationLastShownAt = LOCAL_STORAGE.getItem(ZOOM_NOTIF_LAST_SHOWN_AT_LOCAL_STORAGE_KEY);
+        const currentTimeMills = new Date().getTime();
+
+        if (
+            !zoomNotificationLastShownAt
+            || currentTimeMills > (parseInt(zoomNotificationLastShownAt) + (MILLS_IN_HOUR * 72))
+        ) {
+            setTimeout(function () {
+                LOCAL_STORAGE.setItem(ZOOM_NOTIF_LAST_SHOWN_AT_LOCAL_STORAGE_KEY, currentTimeMills);
+
+                showTopNotification(NOTIFICATION_TEXT_ZOOM, TOP_NOTIFICATION_SHOW_MS * 3, false);
+            }, 20000);
+        }
+    }
 }
 
 function moveMobileTextSelectionControlsToMessageDelayed () {
@@ -561,25 +626,8 @@ function initRoomPageWebSocket (roomName, backendInstanceAddr, alternativeRoomNa
         onOpen(roomName);
     };
 
-    ws.onerror = function () {
-        if (isLoggedIn || isRoomReconnectInProgress) {
-            ws.onerror = function () {};
-            ws.onclose = function () {};
-            reconnectToRoom();
-        } else {
-            redirectToHomePageWithError(ROOM_TO_HOME_PG_REDIRECT_ERROR_CONNECTION);
-        }
-    }
-
-    ws.onclose = function () {
-        if (isLoggedIn || isRoomReconnectInProgress) {
-            ws.onerror = function () {};
-            ws.onclose = function () {};
-            reconnectToRoom();
-        } else {
-            redirectToHomePageWithError(ROOM_TO_HOME_PG_REDIRECT_ERROR_CONNECTION);
-        }
-    }
+    ws.onerror = onConnectionBroken;
+    ws.onclose = onConnectionBroken;
 
     ws.onmessage = function (e) {
         let message = JSON.parse(e.data);
@@ -705,14 +753,14 @@ function sendUserMessage () {
 
         const sent = sendData(ws,
             JSON.stringify({
-                c: "TM_E",
+                c: COMMANDS.TextMessageEdit,
                 rq: "u_action_" + nextUserActionIndicationIdVal,
                 r: {
                     n: currentRoomName
                 },
                 m: {
                     id: editMessageId,
-                    t: encodeURI(messageTxt.trim()),
+                    t: encodeURIComponent(messageTxt.trim()),
                     rU: replyToUserId || undefined,
                     rM: parseInt(replyToMessageId) || undefined,
                 }
@@ -749,13 +797,13 @@ function sendUserMessage () {
 
     const sent = sendData(ws,
         JSON.stringify({
-            c: "TM",
+            c: COMMANDS.TextMessage,
             rq: "u_action_" + nextUserActionIndicationIdVal,
             r: {
                 n: currentRoomName
             },
             m: {
-                t: encodeURI(messageTxt.trim()),
+                t: encodeURIComponent(messageTxt.trim()),
                 rU: replyToUserId || undefined,
                 rM: parseInt(replyToMessageId) || undefined,
             }
@@ -773,7 +821,7 @@ function sendUserMessage () {
     }
 
     if (messageTextareaInLargeMode) {
-        $userMessageTextarea.focus();
+        activateUserMessageInput();
     }
 
     scrollChatBottom();
@@ -872,16 +920,14 @@ function editUserMessage (editMessageId, $messageBlock) {
 
     $sendMessageButton.text('edit');
 
-    //show user message block if it is minimized
-    if ($userMessageContentWr.css('display') === 'none') {
-        toggleUserMessageBlock();
-    }
+    //show user message block if it is collapsed
+    showUserMessageBlock();
 
     resizeWrappersHeight(isChatAtBottom);
 
     scrollToElement($messageBlock[0]);
 
-    $userMessageTextarea.focus();
+    activateUserMessageInput();
 }
 
 function cancelMessageEdit () {
@@ -915,7 +961,7 @@ function deleteUserMessage (deleteMessageId) {
 
     const sent = sendData(ws,
         JSON.stringify({
-            c: "TM_D",
+            c: COMMANDS.TextMessageDelete,
             rq: "u_action_" + nextUserActionIndicationIdVal,
             r: {
                 n: currentRoomName
@@ -937,7 +983,7 @@ function supportRejectMsg (messageId, isSupport) {
 
     const sent = sendData(ws,
         JSON.stringify({
-            c: "TM_S_R",
+            c: COMMANDS.TextMessageSupportOrReject,
             rq: "u_action_" + nextUserActionIndicationIdVal,
             r: {
                 n: currentRoomName
@@ -971,13 +1017,13 @@ function changeRoomDescription () {
 
     const sent = sendData(ws,
         JSON.stringify({
-            c: "R_CH_D",
+            c: COMMANDS.RoomChangeDescription,
             rq: "u_action_" + nextUserActionIndicationIdVal,
             r: {
                 n: currentRoomName
             },
             m: {
-                t: encodeURI(newRoomDescr)
+                t: encodeURIComponent(newRoomDescr)
             }
         })
     );
@@ -1011,9 +1057,9 @@ function changeUserName () {
 
     const sent = sendData(ws,
         JSON.stringify({
-            c: "R_CH_UN",
+            c: COMMANDS.RoomChangeUserName,
             rq: "u_action_" + nextUserActionIndicationIdVal,
-            uN: encodeURI(newUserName),
+            uN: encodeURIComponent(newUserName),
             r: {
                 n: currentRoomName
             },
@@ -1031,13 +1077,13 @@ function sendUserDrawingMessage (fileName, fileGroupPrefix) {
 
     const sent = sendData(ws,
         JSON.stringify({
-            c: "DM",
+            c: COMMANDS.UserDrawingMessage,
             rq: "u_action_" + nextUserActionIndicationIdVal,
             r: {
                 n: currentRoomName
             },
             m: {
-                t: encodeURI(MESSAGE_META_MARKER_TYPE_DRAWING + fileName + "@" + fileGroupPrefix),
+                t: encodeURIComponent(MESSAGE_META_MARKER_TYPE_DRAWING + fileName + "@" + fileGroupPrefix),
             }
         })
     );
@@ -1088,16 +1134,14 @@ function processRoomDescriptionChangedCommand (message) {
         if (roomCreatorUserInRoomUUID === messageAuthorUserId) {
             $messageBlock.addClass('room-msg-room-creator');
 
-            $messageBlock.find('.message-marks-wr')
-                .append($('<span>adm</span>'));
+            $messageBlock.find('.msg-adm-mark').removeClass('d-none');
 
             const $messageInPicksBlock = findFolkPicksMessageBlockById(msgId);
 
             if ($messageInPicksBlock) {
                 $messageInPicksBlock.addClass('room-msg-room-creator');
 
-                $messageInPicksBlock.find('.message-marks-wr')
-                    .append($('<span>adm</span>'));
+                $messageInPicksBlock.find('.msg-adm-mark').removeClass('d-none');
             }
         }
 
@@ -1172,6 +1216,13 @@ function processRoomDescriptionChangedCommand (message) {
 }
 
 function processRoomMembersChangedCommand(message) {
+    //if we just reconnected and build version changed - ask user to reload page
+    if (message.bN && message.bN !== currentBuildNumber) {
+        stopLoadingOnVersionChanged();
+
+        return;
+    }
+
     const newUserListTimestamp = message.cAt;
     const newUsersList = message.rU;
     const newUserInfoByIdCache = {};
@@ -1247,7 +1298,7 @@ function processRoomMembersChangedCommand(message) {
             //check if existing user name changed. If so - update any messages related to this user with new name
             const existingUserInfo = lastUserInfoByIdCache[userId];
             const oldUserName = existingUserInfo ? decodeURIComponent(existingUserInfo.name) : null;
-            const newUserName = decodeURIComponent(userCachedInfo.name);
+            const newUserName = userName;
 
             if (oldUserName !== newUserName) {
 
@@ -1288,6 +1339,8 @@ function processRoomMembersChangedCommand(message) {
 
                     $userJoinedAsName.text(userName);
                     $userJoinedAsChangeInput.val(userName);
+
+                    roomMessagesBackupOfflineStoragesUsername = userName;
 
                     $roomWelcomeMessageUsername.find('.user-message-joined-as-block').remove();
                     $roomWelcomeMessageUsername.append(
@@ -1508,8 +1561,15 @@ function processSupportOrRejectCommand(message) {
                 }
             }
 
+            cancelMessageTextSelectionMode()
+
             //copy message to folk picks
+            const $messagePreloadedImage = $roomMessage.find('.message-link-preview-logo-img');
+            removeImageOnLoadCallback($messagePreloadedImage);
+
             $messageInFolkPicksScreen = $roomMessage.clone(true, true);
+
+            applyImageOnLoadCallback($messagePreloadedImage);
 
             //if this is 1st voted message
             if ($folkPicksEmptyMessagesWr.css('display') === 'block') {
@@ -1624,7 +1684,7 @@ function displayUserDrawingMessage (data, messageId, needToScrollChatToBottom) {
     });
 
     if (needToScrollChatToBottom) {
-        $drawingMessagePreviewBlock.on('load', scrollChatBottom);
+        applyImageOnLoadCallback($drawingMessagePreviewBlock);
     }
 
     //clear message text
@@ -1683,6 +1743,13 @@ function processTextMessageCommand (message) {
 }
 
 function processAllTextMessagesCommand (message) {
+    //if we just reconnected and build version changed - ask user to reload page
+    if (message.bN && message.bN !== currentBuildNumber) {
+        stopLoadingOnVersionChanged();
+
+        return;
+    }
+
     //if this page was re-loaded and there are some old messages to delete - do it
     $roomMessagesWr.find(".room-msg-main-wr." + CLASS_MESSAGE_TO_CLEAN_UP).each(function () {
         $(this).remove();
@@ -1761,6 +1828,10 @@ function processAllTextMessagesCommand (message) {
     }
 
     textSearchDataChangedAt = new Date().getTime();
+
+    //clear roomMessagesBackupOfflineStorage - if this has been a 'reconnect' - 
+    //all-messages command just arrived and we dont need offline storage anymore
+    roomMessagesBackupOfflineStorage = null;
 }
 
 function processTextMessage(textMessage, roomMessagesCopedAt, allTextMessages, needToCheckMessagesOrder, needToScrollChatToBottom) {
@@ -1815,7 +1886,8 @@ function processTextMessage(textMessage, roomMessagesCopedAt, allTextMessages, n
     const $textMessageBlock = $roomMessage.find('.room-msg-text-inner');
 
     //for single character message with emoji symbol - enlarge text
-    if (unicodeStringLength(messageText.trim()) < 2 && stringContainsEmoji(messageText)) {
+    if (messageText.trim().length > 1 && unicodeStringLength(messageText.trim()) === 1
+        && stringContainsEmoji(messageText)) {
         $textMessageBlock.addClass('room-msg-text-inner-enlarge');
     }
 
@@ -1827,7 +1899,7 @@ function processTextMessage(textMessage, roomMessagesCopedAt, allTextMessages, n
 
     //set voting behaviour
 
-    $roomMessage.find('.room-msg-buttons-support-text, .room-msg-buttons-support-text-short, .room-msg-buttons-support-val')
+    $roomMessage.find('.room-msg-buttons-support')
         .on('mousedown', function (e) {
             if (userInRoomUUID && $roomMessage.attr('data-user-id') === userInRoomUUID && userInRoomUUID !== roomCreatorUserInRoomUUID) {
                 return;
@@ -1838,7 +1910,7 @@ function processTextMessage(textMessage, roomMessagesCopedAt, allTextMessages, n
             supportRejectMsg(parseInt($messageBlock.attr('data-msg-id')), true);
         });
 
-    $roomMessage.find('.room-msg-buttons-reject-text, .room-msg-buttons-reject-text-short, .room-msg-buttons-reject-val')
+    $roomMessage.find('.room-msg-buttons-reject')
         .on('mousedown', function (e) {
             if (userInRoomUUID && $roomMessage.attr('data-user-id') === userInRoomUUID && userInRoomUUID !== roomCreatorUserInRoomUUID) {
                 return;
@@ -1860,8 +1932,7 @@ function processTextMessage(textMessage, roomMessagesCopedAt, allTextMessages, n
         $roomMessage.addClass('room-msg-room-creator');
 
         //if this message is from room admin - add message mark
-        $roomMessage.find('.message-marks-wr')
-            .append($('<span>adm</span>'));
+        $roomMessage.find('.msg-adm-mark').removeClass('d-none');
     }
 
     if (userInRoomUUID && userInRoomUUID === messageAuthorUserId) {
@@ -2102,7 +2173,8 @@ function processTextMessageEditCommand (message) {
         $messageTextBlock.append($messageTextInnerBlock);
 
         //for single character message with emoji symbol - enlarge text
-        if (unicodeStringLength(newMessageText.trim()) < 2 && stringContainsEmoji(newMessageText)) {
+        if (newMessageText.trim().length > 1 && unicodeStringLength(newMessageText.trim()) === 1
+            && stringContainsEmoji(newMessageText)) {
             $messageTextInnerBlock.addClass('room-msg-text-inner-enlarge');
         }
 
@@ -2161,48 +2233,66 @@ function processTextMessageDeleteCommand (message) {
 
     const $roomMessage = findMessageBlockById(messageId);
     if ($roomMessage) {
-        deletedMessageIds[messageId] = true;
-
-        delete messageIdToTextSearchInfo[messageId];
-
-        if ($roomMessage.find('.room-msg-text-inner').text().toLowerCase()
-            .includes(currentTextSearchContext.text)) {
-            textSearchDataChangedAt = new Date().getTime();
-        }
-
-        $roomMessage.off();
-        $roomMessage.children().remove();
-        $roomMessage.append('<p class="message-deleted-text">this message was deleted</p>');
-
-        const $folkPicksMessage = findFolkPicksMessageBlockById(messageId);
-        if ($folkPicksMessage) {
-            $folkPicksMessage.off();
-            $folkPicksMessage.children().remove();
-            $folkPicksMessage.append('<p class="message-deleted-text">this message was deleted</p>');
-        }
-
-        //look for message quotes and clear them
-        for (let roomMsgId in roomMessageIdToDOMElem) {
-            const $roomMsgBlock = roomMessageIdToDOMElem[roomMsgId];
-
-            if (messageId === parseInt($roomMsgBlock.attr('data-reply-to-msg-id'))) {
-                $roomMsgBlock.find('.original-message-short-text').text(MESSAGE_UNAVAILABLE_PLACEHOLDER_TEXT);
-            }
-        }
-
-        for (let picksMsgId in folkPicksMessageIdToDOMElem) {
-            const $picksMsgBlock = folkPicksMessageIdToDOMElem[picksMsgId];
-
-            if (messageId === parseInt($picksMsgBlock.attr('data-reply-to-msg-id'))) {
-                $picksMsgBlock.find('.original-message-short-text').text(MESSAGE_UNAVAILABLE_PLACEHOLDER_TEXT);
-            }
-        }
+        deleteRoomMessage(messageId, $roomMessage, true);
     } else {
         //if target text message is not received yet - add this delete message to queue and process once target message arrives
         commandsToProcessDeleteMessage[messageId] = message;
 
         delete commandsToProcessEditMessage[messageId];
         delete commandsToProcessVoteMessage[messageId];
+    }
+}
+
+function deleteRoomMessage (messageId, $roomMessage, leavePlaceholder) {
+    deletedMessageIds[messageId] = true;
+
+    delete messageIdToTextSearchInfo[messageId];
+
+    if ($roomMessage.find('.room-msg-text-inner').text().toLowerCase()
+        .includes(currentTextSearchContext.text)) {
+        textSearchDataChangedAt = new Date().getTime();
+    }
+
+    $roomMessage.off();
+
+    if (leavePlaceholder) {
+        $roomMessage.children().remove();
+        $roomMessage.append('<p class="message-deleted-text">this message was deleted</p>');
+    } else {
+        $roomMessage.remove();
+    }
+
+    const $folkPicksMessage = findFolkPicksMessageBlockById(messageId);
+    if ($folkPicksMessage) {
+        $folkPicksMessage.off();
+
+        if (leavePlaceholder) {
+            $folkPicksMessage.children().remove();
+            $folkPicksMessage.append('<p class="message-deleted-text">this message was deleted</p>');
+        } else {
+            $folkPicksMessage.remove();
+
+            if (!anyMessageIsFolkPicked()) {
+                $folkPicksMessagesWr.append($folkPicksEmptyMessagesWr);
+            }
+        }
+    }
+
+    //look for message quotes and clear them
+    for (let roomMsgId in roomMessageIdToDOMElem) {
+        const $roomMsgBlock = roomMessageIdToDOMElem[roomMsgId];
+
+        if (messageId === parseInt($roomMsgBlock.attr('data-reply-to-msg-id'))) {
+            $roomMsgBlock.find('.original-message-short-text').text(MESSAGE_UNAVAILABLE_PLACEHOLDER_TEXT);
+        }
+    }
+
+    for (let picksMsgId in folkPicksMessageIdToDOMElem) {
+        const $picksMsgBlock = folkPicksMessageIdToDOMElem[picksMsgId];
+
+        if (messageId === parseInt($picksMsgBlock.attr('data-reply-to-msg-id'))) {
+            $picksMsgBlock.find('.original-message-short-text').text(MESSAGE_UNAVAILABLE_PLACEHOLDER_TEXT);
+        }
     }
 }
 
@@ -2216,6 +2306,17 @@ function processRoomNotificationCommand (message) {
         case COMMANDS.NotifyMessagesLimitReached:
             showNotification(NOTIFICATION_TEXT_MESSAGE_LIMIT_REACHED);
 
+            const lowestRemainingMessageId = parseInt(message.m[0].t);
+
+            for (let messageId in roomMessageIdToDOMElem) {
+                if (messageId < lowestRemainingMessageId) {
+                    const $roomMessage = findMessageBlockById(messageId);
+                    if ($roomMessage) {
+                        deleteRoomMessage(messageId, $roomMessage, false);
+                    }
+                }
+            }
+
             break;
     }
 }
@@ -2226,13 +2327,7 @@ function processRequestProcessedCommand (message) {
 
         //if we just reconnected and build version changed - ask user to reload page
         if (message.bN !== currentBuildNumber) {
-            $spinnerOverlayMidContentWr.addClass('d-none');
-
-            showVersionChangedSpinner();
-
-            //Not setting isRoomReconnectInProgress=false here
-
-            shutdownSocket();
+            stopLoadingOnVersionChanged();
 
             return;
         }
@@ -2258,6 +2353,12 @@ function processRequestProcessedCommand (message) {
 
         if (roomHasPassword) {
             $shareRoomHasPassword.removeClass('d-none');
+
+            $roomInfoCollapsePasswordNote.addClass('room-password-note-password-set');
+            $roomInfoCollapsePasswordNote.text(ROOM_PASSWORD_NOTE_PASSWORD_SET_TEXT);
+        } else {
+            $roomInfoCollapsePasswordNote.addClass('room-password-note-password-not-set');
+            $roomInfoCollapsePasswordNote.text(ROOM_PASSWORD_NOTE_PASSWORD_NOT_SET_TEXT);
         }
 
         roomUUID = message.rId;
@@ -2287,7 +2388,10 @@ function processRequestProcessedCommand (message) {
                 $userJoinedAsAnonPref.addClass('d-none');
             }
 
-            $userJoinedAsName.text(decodeURIComponent(currentUserInfo.name));
+            const userName = decodeURIComponent(currentUserInfo.name);
+            $userJoinedAsName.text(userName);
+
+            roomMessagesBackupOfflineStoragesUsername = userName;
         } else {
             $userJoinedAsName.text(UNKNOWN_USER_NAME);
         }
@@ -2424,7 +2528,7 @@ function roomMessageOnContextMenu (e) {
 
     cancelMessageTextSelectionMode();
 
-    hideMobileKeyboard();
+    deactivateUserMessageInput();
 
     //if clicked on link or started desktop text selection
     if ($clickedBlock.hasClass('message-highlight-link') ||
@@ -2488,6 +2592,8 @@ function roomMessageOnContextMenu (e) {
         $messageContextMenuGotoButton.removeClass('d-none');
         $messageContextMenuGotoButton.on('click', function (e) {
             stopPropagationAndDefault(e);
+
+            hideGlobalTransparentOverlay();
 
             hideFolkPicksMobile();
             $messageContextMenu.addClass('d-none');
@@ -2689,7 +2795,7 @@ function onRoomMessageAuthorClick (e) {
     startReplyToUser(messageAuthorUserId, messageAuthorName, !!$anonBlock.length);
 }
 
-function startReplyToUser(messageAuthorUserId, messageAuthorName, isAnon) {
+function startReplyToUser (messageAuthorUserId, messageAuthorName, isAnon) {
     if (messageAuthorUserId === userInRoomUUID) {
         return;
     }
@@ -2701,10 +2807,8 @@ function startReplyToUser(messageAuthorUserId, messageAuthorName, isAnon) {
 
     userReplyInProgressToId = messageAuthorUserId;
 
-    //show user message block if it is minimized
-    if ($userMessageContentWr.css('display') === 'none') {
-        toggleUserMessageBlock();
-    }
+    //show user message block if it is collapsed
+    showUserMessageBlock();
 
     if (isAnon) {
         $answerToUserWr.find('.answer-to-user-anon-pref').removeClass('d-none');
@@ -2718,14 +2822,14 @@ function startReplyToUser(messageAuthorUserId, messageAuthorName, isAnon) {
 
     resizeWrappersHeight(isChatAtBottom);
 
-    $userMessageTextarea.focus();
+    activateUserMessageInput();
 
     setTimeout(function () {
         $body[0].scrollTop = getOffsetTop($answerToUserWr[0]);
     }, 200);
 }
 
-function cancelReplyToUser() {
+function cancelReplyToUser () {
     if (userReplyInProgressToId) {
         const isChatAtBottom = isChatScrolledBottom();
 
@@ -2737,7 +2841,7 @@ function cancelReplyToUser() {
     }
 }
 
-function appendReplyToUserBlock($messageBlockToAppend, replyToUserId, messageId) {
+function appendReplyToUserBlock ($messageBlockToAppend, replyToUserId, messageId) {
     const replyToUserInfo = lastUserInfoByIdCache[replyToUserId];
 
     let replyToUserName = UNKNOWN_USER_NAME;
@@ -2797,10 +2901,8 @@ function startReplyToMessage(messageId, messageShortText, messageAuthorUserId, m
     userReplyInProgressToId = messageAuthorUserId;
 
     hideFolkPicksMobile();
-    //show user message block if it is minimized
-    if ($userMessageContentWr.css('display') === 'none') {
-        toggleUserMessageBlock();
-    }
+    //show user message block if it is collapsed
+    showUserMessageBlock();
 
     if (isAnon) {
         $answerToMessageWr.find('.reply-to-message-anon-pref').removeClass('d-none');
@@ -2815,7 +2917,7 @@ function startReplyToMessage(messageId, messageShortText, messageAuthorUserId, m
 
     resizeWrappersHeight(isChatAtBottom);
 
-    $userMessageTextarea.focus();
+    activateUserMessageInput();
 
     setTimeout(function () {
         $body[0].scrollTop = getOffsetTop($answerToMessageWr[0]);
@@ -2903,6 +3005,20 @@ function sendData (ws, inputStr) {
 
 function isWsOpen() {
     return ws.readyState === ws.OPEN
+}
+
+function onConnectionBroken () {
+    if (isLoggedIn || isRoomReconnectInProgress) {
+        //store last state of messageIdToTextSearchInfo until reconnect and new all-messages command arrival
+        roomMessagesBackupOfflineStorage = messageIdToTextSearchInfo;
+
+        ws.onerror = function () {};
+        ws.onclose = function () {};
+
+        reconnectToRoom();
+    } else {
+        redirectToHomePageWithError(ROOM_TO_HOME_PG_REDIRECT_ERROR_CONNECTION);
+    }
 }
 
 function addNewVisitedRoom() {
@@ -3205,6 +3321,10 @@ function cancelMessageTextSelectionMode ($messageBlock, animateControls) {
                 $cancelButtonBlock.remove();
             }
         }
+
+        if (isInUserMessageCompactMode) {
+            hideUserMessageBlock();
+        }
     }
 }
 
@@ -3281,7 +3401,7 @@ function reconnectToRoom () {
 
     resizeWrappersHeight(true);
 
-    wsReconnectTimeout = setTimeout(createOrJoinRoom, reconnectAttempt * 3000);
+    wsReconnectTimeout = setTimeout(createOrJoinRoom, reconnectAttempt * getRandomIntInclusive(3000, 5000));
 
     if (reconnectAttempt < 10) {
         reconnectAttempt++;
@@ -3615,7 +3735,7 @@ function cancelTextSearchHighlights () {
 }
 
 function isTextSearchInProgress () {
-    return !!currentTextSearchContext.searchResultMessagesContextArr;
+    return currentTextSearchContext && !!currentTextSearchContext.searchResultMessagesContextArr;
 }
 
 function cancelTextSearchHighlightsForBlock ($messageBlock) {
@@ -3890,9 +4010,12 @@ function findActiveAreaBlockInsideMessageBlock (activeArea, $messageBlock) {
 
 function getOnlineUsersCountString () {
     const onlineUsersCount = Object.values(lastUserInfoByIdCache)
-        .filter(user => !!user.isOnlineInRoom).length;
+        .filter(user => !!user.isOnlineInRoom)
+        .length;
 
-    const allUsersCount = Object.values(lastUserInfoByIdCache).length;
+    const allUsersCount = Object.values(lastUserInfoByIdCache)
+        .filter(user => !TECHNICAL_USER_NAMES.includes(user.name))
+        .length;
 
     return onlineUsersCount === allUsersCount
         ? onlineUsersCount + ''
@@ -4018,4 +4141,117 @@ function clearTextSelection () {
     } else if (document.selection) {  // IE
         document.selection.empty();
     }
+}
+
+function isUserAcceptedClientAgreement () {
+    const checkClientAgreementAcceptedInfoStr = LOCAL_STORAGE.getItem(CLIENT_AGREEMENT_ACCEPTED_LOCAL_STORAGE_KEY);
+    let isCurrentVersionAccepted = false;
+
+    if (checkClientAgreementAcceptedInfoStr) {
+        const checkClientAgreementAcceptedInfo = JSON.parse(checkClientAgreementAcceptedInfoStr);
+
+        isCurrentVersionAccepted = checkClientAgreementAcceptedInfo.version === CLIENT_AGREEMENT_VERSION;
+    }
+
+    return isCurrentVersionAccepted;
+}
+
+function showClientAgreement () {
+    unBindMainOverlay();
+    showMainOverlay();
+
+    $clientAgreementAcceptBtn.on('click', function () {
+        acceptClientAgreement();
+    });
+
+    $clientAgreementPopup.removeClass('d-none');
+}
+
+function acceptClientAgreement () {
+    //accept client agreement
+    LOCAL_STORAGE.setItem(CLIENT_AGREEMENT_ACCEPTED_LOCAL_STORAGE_KEY, JSON.stringify({
+        "version": CLIENT_AGREEMENT_VERSION,
+        "date": new Date().getTime()
+    }));
+
+    $clientAgreementPopup.addClass('d-none');
+
+    //accept cookie policy
+    LOCAL_STORAGE.setItem(COOKIES_ACCEPTED_LOCAL_STORAGE_KEY, new Date().getTime() + '');
+
+    //proceed with page init
+    bindMainOverlay();
+    hideMainOverlay();
+
+    doInit();
+}
+
+function showSpinnerOverlay() {
+    if ($spinnerOverlay.hasClass('d-none')) {
+        if (getRoomMessagesForBackupCount()) {
+            $spinnerOverlayMesagesBackupWr.removeClass('d-none');
+        }
+
+        $spinnerOverlay.removeClass('d-none');
+    }
+}
+
+function showVersionChangedSpinner () {
+    if (getRoomMessagesForBackupCount()) {
+        $spinnerOverlayMesagesBackupWr.removeClass('d-none');
+    }
+
+    $spinnerOverlayVersionChangedWr.removeClass('d-none');
+}
+
+function getAllMessagesText () {
+    let allMessagesText = "Room: " + ROOM_NAME + "\n";
+    allMessagesText += "Joined as: " + roomMessagesBackupOfflineStoragesUsername + "\n";
+
+    const latestRoomMessagesState = getLatestRoomMessagesStateForBackup();
+
+    for (let msgId in latestRoomMessagesState) {
+        const messageSearchInfo = latestRoomMessagesState[msgId];
+        let messageText = messageSearchInfo.text;
+
+        if (messageText.startsWith(MESSAGE_META_MARKER_TYPE_DRAWING)) {
+            messageText = '{user drawing}';
+        }
+
+        allMessagesText += "-----------------------------------------------------\n" + 
+            "[" + messageSearchInfo.messageTimeText + "] " + messageSearchInfo.authorName + ": " + 
+            messageText + "\n\n";
+    }
+
+    return allMessagesText;
+}
+
+function getRoomMessagesForBackupCount () {
+    return Object.keys(getLatestRoomMessagesStateForBackup()).length;
+}
+
+function backupRoomMessages () {
+    if (!roomMessagesBackupInProgress && getRoomMessagesForBackupCount()) {
+        roomMessagesBackupInProgress = true;
+
+        downloadTextFile(getAllMessagesText(), 'myinstantchat_chat_' + getFormattedDatetime() + '.txt');
+
+        roomMessagesBackupInProgress = false;
+    }
+}
+
+function getLatestRoomMessagesStateForBackup () {
+    return roomMessagesBackupOfflineStorage != null 
+        ? roomMessagesBackupOfflineStorage 
+        : messageIdToTextSearchInfo;
+}
+
+function stopLoadingOnVersionChanged () {
+    $spinnerOverlayMidContentWr.addClass('d-none');
+
+    showVersionChangedSpinner();
+
+    //Not setting isRoomReconnectInProgress=false here
+
+    shutdownSocket();
 }

@@ -2,9 +2,9 @@ package http_server
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -38,6 +38,8 @@ var ShutdownWaitTimeout = 10 * time.Second
 var LogMaxSizeMb = 500
 var LogMaxFilesToKeep = 3
 var LogMaxFileAgeDays = 60
+
+var TextFilesEnabled = true
 
 /* Variables */
 
@@ -103,17 +105,26 @@ func StartServer() {
 	router.HandleFunc("/get_text_file", middleware(getTextFile, loggingWrapper))
 	router.HandleFunc("/upload_text_file", middleware(uploadTextFile, loggingWrapper))
 
+	cert, err := tls.LoadX509KeyPair("/etc/ssl/ssl-bundle.crt", "/etc/ssl/cert.key")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         HttpPort,
 		ReadTimeout:  HttpTimeout,
 		WriteTimeout: HttpTimeout,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		},
 	}
 
 	// Start Server
 	go func() {
 		util.LogInfo("Starting Server on '%s'", HttpPort)
-		if err := srv.ListenAndServe(); err != nil {
+		if err := srv.ListenAndServeTLS("", ""); err != nil {
 			log.Fatal(err)
 		}
 	}()
@@ -162,6 +173,13 @@ func getUrlPreview(w http.ResponseWriter, r *http.Request) {
 }
 
 func getTextFile(w http.ResponseWriter, r *http.Request) {
+	if !TextFilesEnabled {
+		util.LogWarn("got 'get text file' request but functionality is disabled")
+
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	fileNameParams, fileNameParamsOk := r.URL.Query()["file_name"]
 	fileGroupPrefixParams, fileGroupPrefixParamsOk := r.URL.Query()["file_group_prefix"]
 
@@ -184,11 +202,18 @@ func getTextFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.Write(textFileBytes)
 }
 
 func uploadTextFile(w http.ResponseWriter, r *http.Request) {
+	if !TextFilesEnabled {
+		util.LogWarn("got 'upload text file' request but functionality is disabled")
+
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	r.ParseForm()
 	fileContent := strings.TrimSpace(r.Form.Get("file_content"))
 	fileName := strings.TrimSpace(r.Form.Get("file_name"))
@@ -259,7 +284,7 @@ func waitForShutdown(srv *http.Server) {
 
 func loadAppConfigs() {
 	appConfigFile, _ := filepath.Abs("app-config.yml")
-	yamlFile, err := ioutil.ReadFile(appConfigFile)
+	yamlFile, err := os.ReadFile(appConfigFile)
 	if err != nil {
 		log.Printf("[SEVERE] Failed to read app config file: '%s'", appConfigFile)
 		panic(err)
@@ -280,12 +305,15 @@ func loadAppConfigs() {
 	LogMaxFilesToKeep = config.AppConfig.Logging.LogMaxFilesToKeep
 	LogMaxFileAgeDays = config.AppConfig.Logging.LogMaxFileAgeDays
 
+	TextFilesEnabled = config.AppConfig.TextFilesEnabled
+
 	log.Printf("app config: HttpPort='%s'", HttpPort)
 	log.Printf("app config: HttpTimeout='%s'", HttpTimeout)
 	log.Printf("app config: ShutdownWaitTimeout='%s'", ShutdownWaitTimeout)
 	log.Printf("app config: LogMaxSizeMb='%d'", LogMaxSizeMb)
 	log.Printf("app config: LogMaxFilesToKeep='%d'", LogMaxFilesToKeep)
 	log.Printf("app config: LogMaxFileAgeDays='%d'", LogMaxFileAgeDays)
+	log.Printf("app config: TextFilesEnabled='%t'", TextFilesEnabled)
 }
 
 func setupMetrics() {

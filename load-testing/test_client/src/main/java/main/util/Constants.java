@@ -5,11 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class Constants {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+    //--dev: change to your address
     //aux-srv address
-    public static final String SERVER_ROOT_ADDR = "192.168.1.100";
+    public static final String SERVER_ROOT_ADDR = "myinstantchat.org";
 
-    public static final String HTTP_PROTOCOL = "http://";
-    public static final String WS_PROTOCOL = "ws://";
+    public static final String HTTP_PROTOCOL = "https://";
+    public static final String WS_PROTOCOL = "wss://";
 
     public static final String AUX_SRV_PICK_BACKEND_ENDPOINT = HTTP_PROTOCOL + SERVER_ROOT_ADDR + "/pick_backend?roomName=";
 

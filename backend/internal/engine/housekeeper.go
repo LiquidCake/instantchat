@@ -25,6 +25,10 @@ func StartSocketHouseKeeper(room *domain_structures.Room) {
 }
 
 func runTimer(room *domain_structures.Room, timer *time.Timer) {
+	if stopTimers || room.IsDeleted {
+		return
+	}
+
 	//wait for timer to tick
 	<-timer.C
 

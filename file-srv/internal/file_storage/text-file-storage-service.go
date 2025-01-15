@@ -2,7 +2,6 @@ package file_storage
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -73,6 +72,8 @@ func SaveTextFileToDisk(fileContent string, fileName string, fileGroupPrefix str
 	return nil
 }
 
+// returning byte[] (so effectively pointer) but should be thread-safe for read because cache update
+// will happen for already different instance of parent struct
 func ReadTextFileFromDisk(fileName string, fileGroupPrefix string) ([]byte, error) {
 	if strings.Contains(fileName, "..") {
 		return nil, errors.New("bad file name")
@@ -82,26 +83,26 @@ func ReadTextFileFromDisk(fileName string, fileGroupPrefix string) ([]byte, erro
 
 	textFilesCacheMutex.Lock()
 
-	_, fileAlreadyExistsInCache := textFilesCache[pathToFile]
+	textFileCacheItem, fileAlreadyExistsInCache := textFilesCache[pathToFile]
 
 	if !fileAlreadyExistsInCache {
-		textFilesCache[pathToFile] = &TextFileContentsCacheItem{
+		textFileCacheItem = &TextFileContentsCacheItem{
 			fileLock:           sync.Mutex{},
 			lastCheckTimestamp: 0,
 			fileTextContent:    nil,
 		}
+
+		textFilesCache[pathToFile] = textFileCacheItem
 	}
 
 	textFilesCacheMutex.Unlock()
-
-	textFileCacheItem, _ := textFilesCache[pathToFile]
 
 	//lock current file's cache item to prevent concurrent queries to same file
 	textFileCacheItem.fileLock.Lock()
 	defer textFileCacheItem.fileLock.Unlock()
 
 	if textFileCacheItem.fileTextContent == nil {
-		bytes, err := ioutil.ReadFile(pathToFile)
+		bytes, err := os.ReadFile(pathToFile)
 
 		if err != nil {
 			return nil, err
@@ -159,7 +160,7 @@ func clearOldCacheItems() {
 func deleteOldTextFiles() {
 	timeNow := time.Now()
 
-	textFilesGroupDir, err := ioutil.ReadDir(UploadTextFilesDirPath)
+	textFilesGroupDir, err := os.ReadDir(UploadTextFilesDirPath)
 
 	if err != nil {
 		util.LogSevere("Failed to list contents of text file uploads DIR ('%s'): '%s'", UploadTextFilesDirPath, err)
@@ -170,7 +171,15 @@ func deleteOldTextFiles() {
 	//iterate all text files group folders, if for some folder no modifications happened for a long time (last file was added too long ago) - delete that folder
 	for _, childDir := range textFilesGroupDir {
 		//when the file was created inside dir for a last time
-		dirModificationTime := childDir.ModTime()
+		fileInfo, err := childDir.Info()
+
+		if err != nil || !childDir.IsDir() {
+			util.LogSevere("Dir entry read issue: ('%s'), isDir: '%b'", err, childDir.IsDir())
+
+			continue
+		}
+
+		dirModificationTime := fileInfo.ModTime()
 
 		if dirModificationTime.Add(TextFileGroupUnchangedTTL).Before(timeNow) {
 			textFilesGroupDirPath := filepath.Join(UploadTextFilesDirPath, childDir.Name())

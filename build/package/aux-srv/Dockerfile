@@ -14,6 +14,13 @@ COPY aux-srv/internal/templates/templates_to_compile ./templates_to_compile
 
 COPY aux-srv/internal/config/app-config.yml ./app-config.yml
 
+#copy ssl cert files
+COPY build/package/nginx/conf/ssl/ssl-bundle.crt /etc/ssl/ssl-bundle.crt
+COPY build/package/nginx/conf/ssl/cert.key /etc/ssl/cert.key
+
+RUN chmod 444 /etc/ssl/ssl-bundle.crt
+RUN chmod 444 /etc/ssl/cert.key
+
 # Run pre-deploy tool
 RUN ./assistant-out >> build.out
 
@@ -35,7 +42,7 @@ RUN mkdir -p ${LOG_DIR}
 VOLUME ${LOG_DIR}
 
 # Expose port 8080 to the outside world
-EXPOSE 8080
+EXPOSE 8080 443
 
 # Command to run the executable
 CMD ["/app/aux-srv"]

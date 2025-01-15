@@ -29,9 +29,19 @@ function initAboutPageUI () {
         hideMyRecentRoomsPopup();
     });
 
+    $preferencesLink.on('click', function () {
+        hideMenuMobile();
+        showPreferencesPopup();
+    });
+
+    $preferencesClose.on('click', function () {
+        hidePreferencesPopup();
+    });
+
     $mainOverlay.on('click', function () {
         hideMenuMobile();
         hideMyRecentRoomsPopup();
+        hidePreferencesPopup();
     });
 
     const xwiper = new Xwiper(document);
@@ -53,6 +63,7 @@ function initAboutPageUI () {
     $document.on('keydown', function(e) {
         if (e.which === KEY_CODE_ESCAPE) {
             hideMyRecentRoomsPopup();
+            hidePreferencesPopup();
         }
     });
 }

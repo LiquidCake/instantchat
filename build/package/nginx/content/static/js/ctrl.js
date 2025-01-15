@@ -132,7 +132,7 @@ function applyCallbacks () {
 
             const textMsgBlock = document.createElement("div");
             textMsgBlock.textContent = "[" + message.uId + " | " + getTimeStrFromNano(message.cAt) + "]: #"
-                + message.id + " " + decodeURI(message.t);
+                + message.id + " " + decodeURIComponent(message.t);
 
             textMessageOutput.appendChild(textMsgBlock);
 
@@ -144,7 +144,7 @@ function applyCallbacks () {
                 roomMessages.forEach(function (nextMessage) {
                     const textMsgBlock = document.createElement("div");
                     textMsgBlock.textContent = "[" + nextMessage.uId + " | " + getTimeStrFromNano(nextMessage.cAt) + "]: #"
-                        + nextMessage.id + " " + decodeURI(nextMessage.t);
+                        + nextMessage.id + " " + decodeURIComponent(nextMessage.t);
 
                     textMessageOutput.appendChild(textMsgBlock);
                 });
@@ -174,6 +174,20 @@ function initWebSocket () {
 }
 
 function sendData (ws, inputStr) {
+    if (ws.readyState != 0 && ws.readyState != 1) {
+        outputLog("failed to connect ws");
+        
+        return;
+    }
+
+    if (ws.readyState == 0) {
+        setTimeout(function () {
+            sendData(ws, inputStr);
+        }, 100);
+
+        return;
+    }
+
     ws.send(inputStr);
     outputLog("++ SENT '" + inputStr + "', " + (inputStr ? inputStr.length : -1) + " symbols\n");
 
@@ -292,7 +306,7 @@ function sendMsg () {
                         n: roomNameInput.value
                     },
                     m: {
-                        t: encodeURI(messageTextInput.value)
+                        t: encodeURIComponent(messageTextInput.value)
                     }
                 })
             );

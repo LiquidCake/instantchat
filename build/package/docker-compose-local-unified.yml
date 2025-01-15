@@ -11,8 +11,13 @@ services:
       # - LOG_LEVEL=INFO
       - LOG_LEVEL=TRACE
       - LOG_FILE_NAME=aux-srv.log
+      - CTRL_AUTH_LOGIN=admin132
+      - CTRL_AUTH_PASSWD=password132
+    extra_hosts:
+      - "myinstantchat.org:192.168.1.100"
     ports:
       - '8090:8080'
+      - '10443:443'
     volumes:
       - type: bind
         source: ../../logs
@@ -32,6 +37,7 @@ services:
       - LOG_FILE_NAME=file-srv.log
     ports:
       - '8085:8085'
+      - '11443:443'
     volumes:
       - type: volume
         source: file-srv-files
@@ -53,8 +59,11 @@ services:
       - LOG_LEVEL=INFO
       # LOG_LEVEL=TRACE
       - LOG_FILE_NAME=backend-1.log
+      - CTRL_AUTH_LOGIN=admin132
+      - CTRL_AUTH_PASSWD=password132
     ports:
       - '8080:8080'
+      - '12443:443'
     volumes:
       - type: bind
         source: ../../logs

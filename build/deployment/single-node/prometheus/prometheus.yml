@@ -26,9 +26,12 @@ scrape_configs:
 
   - job_name: 'go-app'
     metrics_path: /metrics
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     static_configs:
       - targets:
-          - host-backend1:8080 #assuming single-node config so monitoring go runtime only for backend #1 (the only one)
+          - host-backend1:12443 #assuming single-node config so monitoring go runtime only for backend #1 (the only one)
 
 #  - job_name: 'cadvisor'
 #    file_sd_configs:

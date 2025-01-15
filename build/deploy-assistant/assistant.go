@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,7 +28,7 @@ func visit(path string, fi os.FileInfo, err error) error {
 		return err
 	}
 
-	if !!fi.IsDir() {
+	if fi.IsDir() {
 		return nil
 	}
 
@@ -41,18 +40,17 @@ func visit(path string, fi os.FileInfo, err error) error {
 		fmt.Printf("Error matching file name: '%s', path: '%s'\n", err, path)
 
 		panic(err)
-		return err
 	}
 
 	if matched {
-		read, err := ioutil.ReadFile(path)
+		read, err := os.ReadFile(path)
 		if err != nil {
 			panic(err)
 		}
 
 		newContents := strings.Replace(string(read), TplBuildVersion, BuildVersion, -1)
 
-		err = ioutil.WriteFile(path, []byte(newContents), 0)
+		err = os.WriteFile(path, []byte(newContents), 0)
 		if err != nil {
 			fmt.Printf("Error writing file: '%s', path: '%s'\n", err, path)
 

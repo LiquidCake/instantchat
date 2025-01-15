@@ -21,6 +21,10 @@ func StartAvgRoomMessagesGaugeTimer(gauge *prometheus.Gauge, activeRoomsByNameMa
 }
 
 func runAvgRoomMessagesTimer(gauge *prometheus.Gauge, timer *time.Timer, activeRoomsByNameMap *domain_structures.ActiveRoomsByName) {
+	if stopAvgRoomMessagesTimers {
+		return
+	}
+
 	//wait for timer to tick
 	<-timer.C
 

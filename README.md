@@ -1,21 +1,20 @@
-### This is an instant text chat project
+## This is a universally-available instant text chat project
+It is meant to be as simple as possible both in terms of usage (for users) and maintenance (for admin)  
+Users can create uniquely-named chat rooms that are available by a clear direct URL without any explicit authentication.  
+Service is accessible using cross-browser responsive web interface, terminal client or even very simple http requests protocol - to the point when you can use it for simple communication between some IOT devices
 
-It is meant to be as simple as possible both in terms of usage (for users) and maintenance (for admin)
-
-Users can create unique-named chat rooms that are available by a clear direct URL, without registration.
-
-Chat is anonymous and 'operative' - messages are not persisted anywhere (so no chat history) and are lost upon service restart (or after room was inactive for a long time).
-
-Room will have only up to X (1000) messages and after that begin to erase old messages
+Chat is anonymous and meant for 'operative' use - messages are not persisted anywhere (so no chat history) and are lost upon service restart (or after room was inactive for a long time)  
+Room will start to erase old messages once count goes beyond some limit (1000 by default)  
 
 ###
+Service is written in GO (backend) and jquery (frontend)  
+GUI is written in JS+Jquery by hand. It is responsive, cross-browser and cross-platform  
+Base service monitoring (Grafana/Prometheus) is included  
 
-Service is written in GO (backend) and jquery (frontend)
+### Check author's deployed instance
+at https://avajoin.net/  
 
-GUI is adaptive, crossbrowser and crossplatform
-
-Includes base monitoring (Grafana/Prometheus)
-
+### Screenshots
 ![152684403-41758f22-037e-43b7-854c-461e0ed463ed](https://user-images.githubusercontent.com/9273621/190246233-27dd3b8b-8038-473e-9a7f-435aa4423026.png)
 
 ####
@@ -67,45 +66,78 @@ There are 3 deployment configurations prepared:
 
 ## Configuration:
 
-Set node addresses, domain etc.
-
-config files:
+Check out config files and set your domain, node addresses etc.
 ```
 instantchat/aux-srv/internal/config/app-config.yml
 instantchat/backend/internal/config/app-config.yml
 ```
 
-set 'extra_hosts' at
+(for non-local run) set node addresses as prometheus container `extra_hosts` at  
+```instantchat/build/deployment/multi-node/monitoring/docker-compose-monitoring.yml``` (for multi-node deployment)  
+```instantchat/build/deployment/single-node/docker-compose-single-node.yml``` (for single-node deployment)  
 
-```instantchat/build/deployment/multi-node/monitoring/docker-compose-monitoring.yml```
+Set domain in nginx.conf - ```instantchat/build/deployment/multi-node/nginx/conf/nginx.conf```  
+Also - ONLY if services like aux-srv are deployed separately from nginx, instead of deploying them together as 'gateway' node - override docker's internal service addresses in nginx.conf  
 
-(or ```instantchat/build/deployment/single-node/docker-compose-single-node.yml```)
+Put a valid ssl certificate for your domain (or self-signed one for local setup) into ```build/package/nginx/conf/ssl```    
 
-Also - ONLY if services like aux-srv are deployed separately from nginx, instead of deploying them together as 'gateway' node - set service addresses in nginx.conf (```instantchat/build/deployment/multi-node/nginx/conf/nginx.conf```)
+Override env vars for `Admin panel` - `CTRL_AUTH_LOGIN, CTRL_AUTH_PASSWD` set in docker-compose file(s) respective to your deployment variant  
 
-## Build / Run locally:
-#### for a local run - set following configuration
-set local machine IP in config files:
-```
-set local machine IP to 'allowedOrigins'    in instantchat/backend/internal/config/app-config.yml
-set local machine IP to 'domain'            in instantchat/aux-srv/internal/config/app-config.yml
-set local machine IP to 'backendInstances'  in instantchat/aux-srv/internal/config/app-config.yml
-```
+After all above steps - take a look at a section about deployment variant you are are going to use (local setup, single-node deployment, multi-node deployment)  
 
-#### build
-
+## build project
+###### below instructions are both to prepare images for 'prod' deployment and to run locally
+After project `configuration` for a particular deployment type (local or multi-node or single-node, see respective sections):  
 On a Linux machine (or WSL) with GO compiler and docker installed, run in project root:
 
-Run ```./rebuild-docker.sh dev``` (or ```prod``` instead of ```dev``` to use 'prod' versions of app properties in ```app-config.yml```)
+Run ```sudo ./rebuild-docker.sh```
 
 This will build all images and start them in local docker (using unified docker file for local deployment - ```instantchat/build/package/docker-compose-local-unified.yml```)
 
 (start / stop manually with ```docker-compose -f instantchat/build/package/docker-compose-local-unified.yml up```)
 
-Thats it, images are ready to be deployed to server nodes and also service is up locally
+That's it, images are ready to be deployed to server nodes if you configured project for one of remote deployment variants (see corresponding sections). Stop docker and start uploading images.  
+Or if project was configured to run locally - just open your local domain address in browser  
+
+## Run locally:
+Web UI is https-only, so you will have to use a real or self-signed certificate  
+
+- invent some test domain like e.g. `myinstantchat.org`  
+
+- (unless provided one is not ok) create a self-signed cert and copy into `build/package/nginx/conf/ssl`  
+Generate e.g. like this: `sudo openssl req -x509 -nodes -days 999999 -newkey rsa:2048 -keyout cert.key -out ssl-bundle.crt`  
+
+- set domain into all address properties in config files:  
+```
+instantchat/aux-srv/internal/config/app-config.yml
+instantchat/backend/internal/config/app-config.yml  
+```
+
+- set `unsecureTestMode: true` in `instantchat/aux-srv/internal/config/app-config.yml` to allow aux-srv to call backend with self-signed cert  
+
+- set domain as extra host for `aux-srv` inside docker-compose file - edit ```instantchat/build/package/docker-compose-local-unified.yml``` and add your local IP (e.g. `192.168.1.100`):
+```
+  aux-srv:
+    extra_hosts:
+      - "myinstantchat.org:192.168.1.100"
+``` 
+
+- create an OS `hosts` file override for this domain e.g. `192.168.1.100 myinstantchat.org`
+
+- build/launch project (see `build` section), then:  
+open `myinstantchat.org` address in browser and accept self-signed cert.  
+open backend websocket endpoint address in browser and accept self-signed cert for websockets to work - e.g. `https://myinstantchat.org:12443/ws_entry`. Address/port is the one you set in aux-srv `app-config.yml` as `backendInstances`
 
 
 ## Multi-node deployment in a 'gateway' mode
+
+### configure the project
+Take a look at `configuration` section and make necessary changes  
+
+Additionally, for multi-node deployment you would want to add all backend node addresses to monitoring config files - process is described in section `How to add new backend node`
+
+### build the project
+Take a look at `build` section - build project after configuration to prepare docker images  
 
 ```
 For `Multi-node deployment in a 'gateway' mode` - example server node addresses are set across default configs and deployment commands as following:
@@ -115,7 +147,7 @@ For `Multi-node deployment in a 'gateway' mode` - example server node addresses 
 192.168.1.255 - as monitoring node
 ```
 
-### 1. Init environment for all server nodes
+### 1. Copy files and init environment for all server nodes
 
 #### create OS user on all server nodes
 ```
@@ -136,10 +168,21 @@ scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.103:/h
 scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.255:/home/instantchat
 
 scp instantchat/build/deployment/multi-node/gateway/init-gateway.sh instantchat@192.168.1.100:/home/instantchat
-
 scp instantchat/build/deployment/multi-node/backend/init-backend.sh instantchat@192.168.1.101:/home/instantchat
 scp instantchat/build/deployment/multi-node/backend/init-backend.sh instantchat@192.168.1.102:/home/instantchat
 scp instantchat/build/deployment/multi-node/backend/init-backend.sh instantchat@192.168.1.103:/home/instantchat
+scp instantchat/build/deployment/multi-node/monitoring/init-monitoring.sh instantchat@192.168.1.255:/home/instantchat
+
+#upload monitoring files
+scp -r instantchat/build/deployment/multi-node/monitoring/prometheus/ instantchat@192.168.1.255:/home/instantchat
+scp -r instantchat/build/deployment/multi-node/monitoring/grafana/ instantchat@192.168.1.255:/home/instantchat
+
+#upload docker-compose files
+scp instantchat/build/deployment/multi-node/gateway/docker-compose-gateway.yml instantchat@192.168.1.100:/home/instantchat
+scp instantchat/build/deployment/multi-node/backend/docker-compose-backend-1.yml instantchat@192.168.1.101:/home/instantchat
+scp instantchat/build/deployment/multi-node/backend/docker-compose-backend-2.yml instantchat@192.168.1.102:/home/instantchat
+scp instantchat/build/deployment/multi-node/backend/docker-compose-backend-3.yml instantchat@192.168.1.103:/home/instantchat
+scp instantchat/build/deployment/multi-node/monitoring/docker-compose-monitoring.yml instantchat@192.168.1.255:/home/instantchat
 ```
 
 #### execute on all server nodes
@@ -158,31 +201,21 @@ init node-specific configs
 
 ```./init-backend.sh```
 
+#### execute on monitoring node
 
-### 2. Copy compose files to nodes
+```./init-monitoring.sh```
 
-#### execute on build machine
-```
-scp instantchat/build/deployment/multi-node/gateway/docker-compose-gateway.yml instantchat@192.168.1.100:/home/instantchat
-
-scp instantchat/build/deployment/multi-node/backend/docker-compose-backend-1.yml instantchat@192.168.1.101:/home/instantchat
-scp instantchat/build/deployment/multi-node/backend/docker-compose-backend-2.yml instantchat@192.168.1.102:/home/instantchat
-scp instantchat/build/deployment/multi-node/backend/docker-compose-backend-3.yml instantchat@192.168.1.103:/home/instantchat
-```
-
-### 3. Deploy images 
+### 2. Upload and import docker images we build earlier
 #### (needs to be repeated after any new build is ready to deployment)
-
-After proper node addresses etc. are `configured` and images are `built` (see corresponding sections above):
 
 #### execute on build machine
 
 save images to files
 ```
-docker save -o /tmp/nginx-latest.tar nginx:latest && \
-docker save -o /tmp/aux-srv-latest.tar aux-srv:latest && \
-docker save -o /tmp/file-srv-latest.tar file-srv:latest && \
-docker save -o /tmp/backend-latest.tar backend:latest
+sudo docker save -o /tmp/nginx-latest.tar nginx:latest && \
+sudo docker save -o /tmp/aux-srv-latest.tar aux-srv:latest && \
+sudo docker save -o /tmp/file-srv-latest.tar file-srv:latest && \
+sudo docker save -o /tmp/backend-latest.tar backend:latest
 ```
 
 copy images to gateway node
@@ -192,19 +225,11 @@ scp /tmp/aux-srv-latest.tar instantchat@192.168.1.100:/home/instantchat
 scp /tmp/file-srv-latest.tar instantchat@192.168.1.100:/home/instantchat
 ```
 
-copy images to all backend nodes
+copy backend image to all backend nodes
 ```
 scp /tmp/backend-latest.tar instantchat@192.168.1.101:/home/instantchat
 scp /tmp/backend-latest.tar instantchat@192.168.1.102:/home/instantchat
 scp /tmp/backend-latest.tar instantchat@192.168.1.103:/home/instantchat
-```
-
-(optionally) cleanup build machine
-```
-rm /tmp/nginx-latest.tar && \
-rm /tmp/aux-srv-latest.tar && \
-rm /tmp/file-srv-latest.tar && \
-rm /tmp/backend-latest.tar
 ```
 
 ### load images on server nodes
@@ -220,88 +245,15 @@ sudo docker load -i file-srv-latest.tar
 
 ```sudo docker load -i backend-latest.tar```
 
-
-### 4. Deploy monitoring files
-
-#### execute on build machine
-```
-scp instantchat/build/deployment/multi-node/monitoring/docker-compose-monitoring.yml instantchat@192.168.1.255:/home/instantchat
-
-scp -r instantchat/build/deployment/multi-node/monitoring/prometheus/ instantchat@192.168.1.255:/home/instantchat
-scp -r instantchat/build/deployment/multi-node/monitoring/grafana/ instantchat@192.168.1.255:/home/instantchat
-```
-
-Note: grafana dashboards are not imported automatically, so import manually via GUI. 
-
-Dashboard files are located at ```instantchat/build/deployment/multi-node/monitoring/grafana/dashboards```
-
-### 5. Run docker on remote servers
+### 3. Run docker on remote servers
 On each server - run ```docker-compose -f /home/instantchat/docker-compose-{node_specific_file_name} up```
 
-## Single-node deployment
-For single-node deployment (all services are on same remote server) - steps are the same as for `Multi-node deployment in a 'gateway' mode`, except there is only 1 node with a single address (`192.168.1.100` in below examples) - to configure everywhere and to load docker images to.
+### finalize monitoring setup
+Grafana dashboards are not imported automatically, so import manually via GUI.  
+Dashboard files for multi-node deployment are located at ```instantchat/build/deployment/multi-node/monitoring/grafana/dashboards```  
+(by default Grafana is deployed with default creds `admin/admin` - dont forget to change)  
 
-And there is a sngle file of each kind to configure it:
-
-### prepare env
-execute on build machine:
-
-```
-scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.100:/home/instantchat
-
-scp instantchat/build/deployment/single-node/init-single-node.sh instantchat@192.168.1.100:/home/instantchat
-scp instantchat/build/deployment/single-node/docker-compose-single-node.yml instantchat@192.168.1.100:/home/instantchat
-
-scp -r instantchat/build/deployment/single-node/prometheus/ instantchat@192.168.1.100:/home/instantchat
-scp -r instantchat/build/deployment/single-node/grafana/ instantchat@192.168.1.100:/home/instantchat
-```
-
-execute on remote node:
-```
-./env-init-ubuntu.sh
-./init-single-node.sh
-```
-
-### upload containers
-execute on build machine:
-
-```
-docker save -o /tmp/nginx-latest.tar nginx:latest && \
-docker save -o /tmp/aux-srv-latest.tar aux-srv:latest && \
-docker save -o /tmp/file-srv-latest.tar file-srv:latest && \
-docker save -o /tmp/backend-latest.tar backend:latest
-
-scp /tmp/nginx-latest.tar instantchat@192.168.1.100:/home/instantchat
-scp /tmp/aux-srv-latest.tar instantchat@192.168.1.100:/home/instantchat
-scp /tmp/file-srv-latest.tar instantchat@192.168.1.100:/home/instantchat
-scp /tmp/backend-latest.tar instantchat@192.168.1.100:/home/instantchat
-```
-
-execute on remove node:
-```
-sudo docker load -i nginx-latest.tar && \
-sudo docker load -i aux-srv-latest.tar && \
-sudo docker load -i file-srv-latest.tar && \
-sudo docker load -i backend-latest.tar
-```
-
-### run single docker-compose no remote node
-`docker-compose -f /home/instantchat/docker-compose-single-node.yml up`
-
-### also
-`instantchat/build/deployment/single-node/`
-Includes separate copy of grafana+prometheus files, also grafana docker service is declared in a single compose file. 
-So monitoring configurations mut be applied to these copies of files and compose file.
-
-## Admin panell (kind of)
-Simple admin pannel that allows some actions with backends is available at `http://{domain}/control_page_proxy`
-Make sure to change login/password properties (`ctrlAuthLogin`, `ctrlAuthPasswd`) in:
-```
-instantchat/backend/internal/config/app-config.yml
-instantchat/aux-srv/internal/config/app-config.yml
-```
-
-## How to add new backend node:
+### How to add new backend node
 #### (backends cluster scaling for a Multi-node deployment)
 
 `Currently everything is done manually`
@@ -325,8 +277,73 @@ e) re-deploy monitoring node (see above)
 
 - copy updated docker-compose-monitoring.yml to monitoring node
   
-- deploy updated monitoring files to monitoring node
+- re-deploy monitoring services
 
+## Single-node deployment
+For single-node deployment (all services are on same remote server) - steps are the same as for `Multi-node deployment in a 'gateway' mode`, except there is only 1 node with a single address (`192.168.1.100` in below examples) - to configure everywhere and to load docker images to.
+Take a look at multi-node deployment for more insight  
+
+Single-node configuration steps are listed below  
+
+### configure the project
+Take a look at `configuration` section and make necessary changes
+
+### build the project
+Take a look at `build` section - build project after configuration to prepare docker images
+
+### prepare env
+execute on build machine:
+
+```
+scp instantchat/build/deployment/env-init-ubuntu.sh instantchat@192.168.1.100:/home/instantchat
+scp instantchat/build/deployment/single-node/init-single-node.sh instantchat@192.168.1.100:/home/instantchat
+scp instantchat/build/deployment/single-node/docker-compose-single-node.yml instantchat@192.168.1.100:/home/instantchat
+scp instantchat/build/deployment/single-node/redeploy.sh instantchat@192.168.1.100:/home/instantchat
+
+scp -r instantchat/build/deployment/single-node/prometheus/ instantchat@192.168.1.100:/home/instantchat
+scp -r instantchat/build/deployment/single-node/grafana/ instantchat@192.168.1.100:/home/instantchat
+```
+
+execute on remote node:
+```
+./env-init-ubuntu.sh
+./init-single-node.sh
+```
+
+### upload containers we built earlier
+execute on build machine:
+
+```
+sudo docker save -o /tmp/nginx-latest.tar nginx:latest && \
+sudo docker save -o /tmp/aux-srv-latest.tar aux-srv:latest && \
+sudo docker save -o /tmp/file-srv-latest.tar file-srv:latest && \
+sudo docker save -o /tmp/backend-latest.tar backend:latest
+
+sudo scp \
+/tmp/nginx-latest.tar \
+/tmp/aux-srv-latest.tar \
+/tmp/file-srv-latest.tar \
+/tmp/backend-latest.tar \
+instantchat@192.168.1.100:/home/instantchat
+```
+
+## import docker images and launch containers
+execute on remote node:
+```
+#WARNING: contains 'docker image prune' which removes unused containers
+sudo ./redeploy.sh
+```
+
+### finalize monitoring setup
+Grafana dashboards are not imported automatically, so import manually via GUI.  
+Dashboard files for single-node deployment are located at ```instantchat/build/deployment/single-node/grafana/dashboards```  
+(by default Grafana is deployed with default creds `admin/admin` - dont forget to change)  
+
+
+## Admin panel (kind of)
+(wont work on local setup without some nginx tinkering, doesn't like proxying to self-signed cert)
+Simple admin panel that allows some runtime operations with backends is available at `https://{domain}/control_page_proxy`
+Make sure to change login/password variables `CTRL_AUTH_LOGIN, CTRL_AUTH_PASSWD` in docker-compose file(s)
 
 ## Load testing
 ### Configuration

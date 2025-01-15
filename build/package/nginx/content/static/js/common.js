@@ -44,12 +44,21 @@ const KEEP_ALIVE_BEACON = JSON.stringify({kA: "OK"});
 
 const RECENT_ROOMS_EMPTY_BLOCK_ID = "recent-rooms-empty";
 
+const WEBVIEW_CHANGE_WINDOW_MODE_KEY_DEFAULT = 144;
+
 const VISITED_ROOMS_LOCAL_STORAGE_KEY = "VISITED_ROOMS";
 const COOKIES_ACCEPTED_LOCAL_STORAGE_KEY = "COOKIES_ACCEPTED";
 const BOTS_LIST_LOCAL_STORAGE_KEY = "BOTS_LIST";
 
 const LAST_VISITED_ROOM_ID_LOCAL_STORAGE_KEY = "LAST_VISITED_ROOM_ID";
 const LAST_UNSENT_MESSAGE_TEXT_LOCAL_STORAGE_KEY = "LAST_UNSENT_MESSAGE_TEXT";
+
+const CLIENT_AGREEMENT_ACCEPTED_LOCAL_STORAGE_KEY = "CLIENT_AGREEMENT_ACCEPTED";
+
+const WEBVIEW_CHANGE_WINDOW_MODE_KEY_LOCAL_STORAGE_KEY = "WEBVIEW_CHANGE_WINDOW_MODE_KEY";
+const SHOW_WINDOW_MODE_KEY_ALERT_LOCAL_STORAGE_KEY = "SHOW_WINDOW_MODE_KEY_ALERT";
+
+const USER_MESSAGE_COMPACT_MODE_SET_LOCAL_STORAGE_KEY = "USER_MESSAGE_COMPACT_MODE_SET";
 
 //redirect variable passing
 const REDIRECT_VARIABLE_LOCAL_STORAGE_KEY = "REDIRECT_VARIABLE";
@@ -59,6 +68,8 @@ const REDIRECT_FROM_ROOM_PAGE_ON_ERROR             = "room-page-on-error";
 const REDIRECT_FROM_ANY_PAGE_ON_RECENT_ROOM_CLICK  = "room-page-on-recent-room-click";
 
 const REDIRECT_VARIABLE_TTL_MS = 30000;
+
+const TECHNICAL_USER_NAMES = ["external-user"];
 
 //message codes
 const ROOM_TO_HOME_PG_REDIRECT_ERROR_GENERIC                      = "room_to_home_pg_redirect_error_generic";
@@ -100,6 +111,8 @@ const TOP_NOTIFICATION_SHOW_MS = 3000;
 const NOTIFICATION_SHOW_MS = 7000;
 const KEEPALIVE_INTERVAL_MS = 5000;
 
+const WEB_VIEW_COMMAND_TOGGLE_WINDOW_MODE = "toggle_window_mode";
+const WEB_COMMAND_CHANGE_WINDOW_MODE_KEY = "change_window_mode_key";
 
 const BUSINESS_ERRORS = {
     101: {name: "WsServerError",                             code: 101, text: "server error"},
@@ -160,7 +173,7 @@ const allowedRoomNameSpecialChars = {
     "~": true,
     "[": true,
     "]": true,
-}
+};
 
 const disallowedRoomNameSpecialChars = {
     "”": true,
@@ -182,7 +195,110 @@ const disallowedRoomNameSpecialChars = {
     "{": true,
     "|": true,
     "}": true,
-}
+};
+
+const keycodesToNames = {
+  8:   "BACK_SPACE",       // 0x08
+  9:   "TAB",              // 0x09
+  13:  "ENTER",            // 0x0d
+//  16:  "SHIFT",            // 0x10
+//  17:  "CONTROL",          // 0x11
+//  18:  "ALT",              // 0x12
+  19:  "PAUSE",            // 0x13
+  20:  "CAPS_LOCK",        // 0x14
+  27:  "ESCAPE",           // 0x1b
+  32:  "SPACE",            // 0x20
+  33:  "PAGE_UP",          // 0x21
+  34:  "PAGE_DOWN",        // 0x22
+  35:  "END",              // 0x23
+  36:  "HOME",             // 0x24
+  37:  "LEFT",             // 0x25
+  38:  "UP",               // 0x26
+  39:  "RIGHT",            // 0x27
+  40:  "DOWN",             // 0x28
+  44:  "PRINTSCREEN",      // 0x2c
+  45:  "INSERT",           // 0x2d
+  46:  "DELETE",           // 0x2e
+  48:  "0",                // 0x30
+  49:  "1",                // 0x31
+  50:  "2",                // 0x32
+  51:  "3",                // 0x33
+  52:  "4",                // 0x34
+  53:  "5",                // 0x35
+  54:  "6",                // 0x36
+  55:  "7",                // 0x37
+  56:  "8",                // 0x38
+  57:  "9",                // 0x39
+  65:  "A",                // 0x41
+  66:  "B",                // 0x42
+  67:  "C",                // 0x43
+  68:  "D",                // 0x44
+  69:  "E",                // 0x45
+  70:  "F",                // 0x46
+  71:  "G",                // 0x47
+  72:  "H",                // 0x48
+  73:  "I",                // 0x49
+  74:  "J",                // 0x4a
+  75:  "K",                // 0x4b
+  76:  "L",                // 0x4c
+  77:  "M",                // 0x4d
+  78:  "N",                // 0x4e
+  79:  "O",                // 0x4f
+  80:  "P",                // 0x50
+  81:  "Q",                // 0x51
+  82:  "R",                // 0x52
+  83:  "S",                // 0x53
+  84:  "T",                // 0x54
+  85:  "U",                // 0x55
+  86:  "V",                // 0x56
+  87:  "W",                // 0x57
+  88:  "X",                // 0x58
+  89:  "Y",                // 0x59
+  90:  "Z",                // 0x5a
+  91:  "WIN LEFT",         // 0x5b
+  92:  "WIN RIGHT",        // 0x5c
+  93:  "CONTEXT_MENU",     // 0x5d
+  96:  "NUMPAD 0",         // 0x60
+  97:  "NUMPAD 1",         // 0x61
+  98:  "NUMPAD 2",         // 0x62
+  99:  "NUMPAD 3",         // 0x63
+  100: "NUMPAD 4",         // 0x64
+  101: "NUMPAD 5",         // 0x65
+  102: "NUMPAD 6",         // 0x66
+  103: "NUMPAD 7",         // 0x67
+  104: "NUMPAD 8",         // 0x68
+  105: "NUMPAD 9",         // 0x69
+  106: "NUMPAD MULTIPLY",  // 0x6a
+  107: "NUMPAD ADD",       // 0x6b
+  109: "NUMPAD SUBTRACT",  // 0x6d
+  110: "NUMPAD PERIOD",    // 0x6e
+  111: "NUMPAD DIVIDE",    // 0x6f
+  112: "F1",               // 0x70
+  113: "F2",               // 0x71
+  114: "F3",               // 0x72
+  115: "F4",               // 0x73
+  116: "F5",               // 0x74
+  117: "F6",               // 0x75
+  118: "F7",               // 0x76
+  119: "F8",               // 0x77
+  120: "F9",               // 0x78
+  121: "F10",              // 0x79
+  122: "F11",              // 0x7a
+  123: "F12",              // 0x7b
+  144: "NUM_LOCK",         // 0x90
+  145: "SCROLL_LOCK",      // 0x91
+  186: ";",                // 0xba
+  187: "=",                // 0xbb
+  188: ",",                // 0xbc
+  189: "-",                // 0xbd
+  190: ".",                // 0xbe
+  191: "/",                // 0xbf
+  192: "~",                // 0xc0
+  219: "[",                // 0xdb
+  220: "\\",               // 0xdc
+  221: "]",                // 0xdd
+  222: "'"                 // 0xde
+};
 
 const receivedURLPreviewInfoItems = {};
 
@@ -199,8 +315,6 @@ document.addEventListener("DOMContentLoaded", function(event) {
 });
 
 function keepAlive() {
-    //console.log(getCurrentTimeStr() + ": start keepAlive, timeoutId: " + keepAliveTimerID);
-
     if (ws) {
         switch (ws.readyState) {
             case ws.OPEN:
@@ -214,7 +328,6 @@ function keepAlive() {
     }
 
     keepAliveTimerID = setTimeout(keepAlive, KEEPALIVE_INTERVAL_MS);
-    //console.log(getCurrentTimeStr() + ": end keepAlive, timeoutId: " + keepAliveTimerID);
 }
 
 function cancelKeepAlive() {
@@ -309,6 +422,7 @@ function redirectToURL(url) {
 
 function closeWsIfExists() {
     if (ws) {
+        ws.onerror = function () {};
         ws.onclose = function () {};
         ws.close(WS_CLOSE_CODE_NORMAL);
     }
@@ -560,4 +674,52 @@ function reloadPage () {
 
 function randomIntBetween (min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min)
+}
+
+function postMessageToWebview (message) {
+    if (window.chrome && window.chrome.webview) {
+         window.chrome.webview.postMessage(message);
+    }
+}
+
+function getRandomIntInclusive(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+function downloadTextFile(data, filename) {
+    let file = new Blob([data], {type: 'text/plain;charset=UTF-8'});
+
+    let a = document.createElement("a");
+    let url = URL.createObjectURL(file);
+    a.href = url;
+    a.download = filename;
+    
+    document.body.appendChild(a);
+    
+    a.click();
+    setTimeout(function () {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);  
+    }, 0); 
+}
+
+function getFormattedDatetime () {
+    const today = new Date();
+
+    const yyyy = today.getFullYear();
+    let mm = today.getMonth() + 1;
+    let dd = today.getDate();
+    let hour = today.getHours();
+    let min = today.getMinutes();
+    let sec = today.getSeconds();
+    
+    if (dd < 10) dd = '0' + dd;
+    if (mm < 10) mm = '0' + mm;
+    if (hour < 10) hour = '0' + hour;
+    if (min < 10) min = '0' + min;
+    if (sec < 10) sec = '0' + sec;
+    
+    return yyyy + '_' + mm + '_' + dd + '_' + hour + '-' + min + '-' + sec;
 }

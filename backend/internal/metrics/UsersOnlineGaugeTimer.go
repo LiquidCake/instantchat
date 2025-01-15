@@ -32,6 +32,10 @@ func runUsersOnlineTimer(
 	timer *time.Timer,
 	activeRoomsByNameMap *domain_structures.ActiveRoomsByName,
 ) {
+	if stopUsersOnlineTimers {
+		return
+	}
+
 	//wait for timer to tick
 	<-timer.C
 

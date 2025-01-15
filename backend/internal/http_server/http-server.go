@@ -2,18 +2,20 @@ package http_server
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime/debug"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -38,12 +40,16 @@ import (
 const BackendHostURLParam = "backendHost"
 const RoomNameURLParam = "roomName"
 const DeleteRoomNameURLParam = "deleteRoomName"
+const DirectMessageTextURLParam = "m"
+const DirectMessagesRoomPasswordURLParam = "p"
+const DirectMessagesLimitParam = "l"
+const DirectMessagesIdParam = "id"
+const DirectMessagesQuiteModeParam = "quite"
+const DirectMessagesResponseFormatParam = "format"
 const CtrlCommandURLParam = "ctrlCommand"
 
 const CtrlCommandNotifyShutdown = "notify_shutdown"
 const CtrlCommandNotifyRestart = "notify_restart"
-
-var defaultPorts = map[string]string{"http": "80", "https": "443"}
 
 var BackendInstanceNum string
 
@@ -132,13 +138,24 @@ func StartServer() {
 	router.HandleFunc("/ctrl_command", middleware(ctrlCommandHandler, basicAuthWrapper))
 
 	router.HandleFunc("/ws_entry", middleware(websocketHandler, loggingWrapper))
+	router.HandleFunc("/direct_sending", middleware(directlySendRoomMessageHandler, loggingWrapper))
+	router.HandleFunc("/direct_retrieval", middleware(directlyRetrieveRoomMessagesHandler, loggingWrapper))
 	router.HandleFunc("/hw", middleware(hwStatusHandler, loggingWrapper))
+
+	cert, err := tls.LoadX509KeyPair("/etc/ssl/ssl-bundle.crt", "/etc/ssl/cert.key")
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	srv := &http.Server{
 		Handler:      router,
 		Addr:         HttpPort,
 		ReadTimeout:  HttpTimeout,
 		WriteTimeout: HttpTimeout,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		},
 	}
 
 	BackendInstanceNum = os.Getenv("INSTANCE_NUM")
@@ -147,7 +164,7 @@ func StartServer() {
 	// Start Server
 	go func() {
 		util.LogInfo("Starting Server on '%s'", HttpPort)
-		if err := srv.ListenAndServe(); err != nil {
+		if err := srv.ListenAndServeTLS("", ""); err != nil {
 			log.Fatal(err)
 		}
 	}()
@@ -162,6 +179,89 @@ func StartServer() {
 
 func websocketHandler(w http.ResponseWriter, r *http.Request) {
 	engine.WsEntry(w, r)
+}
+
+func directlyRetrieveRoomMessagesHandler(w http.ResponseWriter, r *http.Request) {
+	var responseTextBytes []byte
+
+	responseFormat := util.GetUnescapedRequestParamValueUnsafe(r, DirectMessagesResponseFormatParam)
+
+	roomName := util.GetUnescapedRequestParamValueUnsafe(r, RoomNameURLParam)
+	roomName = strings.ToLower(roomName)
+
+	if roomName == "" {
+		responseTextBytes = util.BuildDirectRoomMessagesErrorResponse("error: bad room name", responseFormat)
+
+	} else {
+		roomPassword := util.GetUnescapedRequestParamValueUnsafe(r, DirectMessagesRoomPasswordURLParam)
+
+		messagesLimitVal := util.GetUnescapedRequestParamValueUnsafe(r, DirectMessagesLimitParam)
+
+		messagesLimit, err := strconv.Atoi(messagesLimitVal)
+		if err != nil {
+			messagesLimit = 0
+		}
+
+		messageIdVal := util.GetUnescapedRequestParamValueUnsafe(r, DirectMessagesIdParam)
+
+		messageId, err := strconv.Atoi(messageIdVal)
+		if err != nil {
+			messageId = 0
+		}
+
+		quiteMode := util.GetUnescapedRequestParamValueUnsafe(r, DirectMessagesQuiteModeParam) == "true"
+
+		responseTextBytes = engine.RetrieveRoomMessagesDirectly(
+			roomName, roomPassword, messagesLimit, int64(messageId), responseFormat, quiteMode)
+	}
+
+	writeDirectMessagesResponse(w, responseTextBytes, "directly retrieve messages", responseFormat)
+}
+
+func directlySendRoomMessageHandler(w http.ResponseWriter, r *http.Request) {
+	var responseTextBytes []byte
+
+	responseFormat := util.GetUnescapedRequestParamValueUnsafe(r, DirectMessagesResponseFormatParam)
+
+	roomName := util.GetUnescapedRequestParamValueUnsafe(r, RoomNameURLParam)
+	roomName = strings.ToLower(roomName)
+
+	if roomName == "" {
+		responseTextBytes = util.BuildDirectRoomMessagesErrorResponse("error: bad room name", responseFormat)
+
+	} else {
+		roomPassword := util.GetUnescapedRequestParamValueUnsafe(r, DirectMessagesRoomPasswordURLParam)
+
+		messageText := util.GetRequestParamValue(r, DirectMessageTextURLParam)
+		messageText = url.QueryEscape(messageText) //properly escape input (we are always storing escaped message text)
+
+		if len(strings.TrimSpace(messageText)) == 0 {
+			responseTextBytes = util.BuildDirectRoomMessagesErrorResponse("error: empty message", responseFormat)
+
+		} else if len(messageText) >= util.MaxMessageLength {
+			responseTextBytes = util.BuildDirectRoomMessagesErrorResponse("error: message is too long", responseFormat)
+
+		} else {
+			responseTextBytes = engine.SendRoomMessageDirectly(roomName, roomPassword, messageText, responseFormat)
+		}
+	}
+
+	writeDirectMessagesResponse(w, responseTextBytes, "directly send messages", responseFormat)
+}
+
+func writeDirectMessagesResponse(w http.ResponseWriter, responseTextBytes []byte, requestType string, responseFormat string) {
+	var contentType = "text/plain; charset=utf-8"
+
+	if responseFormat == "json" {
+		contentType = "application/json"
+	}
+
+	w.Header().Set("Content-Type", contentType)
+	_, err := w.Write(responseTextBytes)
+
+	if err != nil {
+		util.LogWarn("Failed to write response for '%s' request. err: '%s'", requestType, err)
+	}
 }
 
 func hwStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -286,7 +386,7 @@ func roomsCtrlHandler(w http.ResponseWriter, r *http.Request) {
 
 	sort.SliceStable(activeRooms, roomsOrderFunc)
 
-	renderRoomsCtrlPage(w, r, &activeRooms, "")
+	renderRoomsCtrlPage(w, &activeRooms)
 }
 
 func renderCtrlPage(w http.ResponseWriter, r *http.Request, errorStr string) {
@@ -317,7 +417,7 @@ func renderCtrlPage(w http.ResponseWriter, r *http.Request, errorStr string) {
 	}
 }
 
-func renderRoomsCtrlPage(w http.ResponseWriter, r *http.Request, activeRooms *[]domain_structures.RoomCtrlInfo, errorStr string) {
+func renderRoomsCtrlPage(w http.ResponseWriter, activeRooms *[]domain_structures.RoomCtrlInfo) {
 	vars := map[string]interface{}{
 		"activeRooms": *activeRooms,
 	}
@@ -411,24 +511,24 @@ func basicAuthWrapper(h http.HandlerFunc) http.HandlerFunc {
 
 		s := strings.SplitN(r.Header.Get("Authorization"), " ", 2)
 		if len(s) != 2 {
-			http.Error(w, "Not authorized", 401)
+			http.Error(w, "Not authorized", util.HTTP_STATUS_UNAUTHORIZED)
 			return
 		}
 
 		b, err := base64.StdEncoding.DecodeString(s[1])
 		if err != nil {
-			http.Error(w, err.Error(), 401)
+			http.Error(w, err.Error(), util.HTTP_STATUS_UNAUTHORIZED)
 			return
 		}
 
 		pair := strings.SplitN(string(b), ":", 2)
 		if len(pair) != 2 {
-			http.Error(w, "Not authorized", 401)
+			http.Error(w, "Not authorized", util.HTTP_STATUS_UNAUTHORIZED)
 			return
 		}
 
 		if pair[0] != CtrlAuthLogin || pair[1] != CtrlAuthPasswd {
-			http.Error(w, "Not authorized", 401)
+			http.Error(w, "Not authorized", util.HTTP_STATUS_UNAUTHORIZED)
 			return
 		}
 
@@ -459,9 +559,11 @@ func waitForShutdown(srv *http.Server) {
 	os.Exit(0)
 }
 
+// logs in this method are written to stdout so they get into container logs
+// but not into application log file that is not yet initialized
 func loadAppConfigs() {
 	appConfigFile, _ := filepath.Abs("app-config.yml")
-	yamlFile, err := ioutil.ReadFile(appConfigFile)
+	yamlFile, err := os.ReadFile(appConfigFile)
 	if err != nil {
 		log.Printf("[SEVERE] Failed to read app config file: '%s'", appConfigFile)
 		panic(err)
@@ -484,6 +586,20 @@ func loadAppConfigs() {
 
 	Domain = config.AppConfig.Domain
 	HttpSchema = config.AppConfig.HttpSchema
+
+	envCtrlAuthLogin := os.Getenv("CTRL_AUTH_LOGIN")
+	if envCtrlAuthLogin != "" {
+		config.AppConfig.CtrlAuthLogin = envCtrlAuthLogin
+
+		log.Printf("CtrlAuthLogin is overridden using env variable CTRL_AUTH_LOGIN")
+	}
+
+	envCtrlAuthPasswd := os.Getenv("CTRL_AUTH_PASSWD")
+	if envCtrlAuthPasswd != "" {
+		config.AppConfig.CtrlAuthPasswd = envCtrlAuthPasswd
+
+		log.Printf("CtrlAuthPasswd is overridden using env variable CTRL_AUTH_PASSWD")
+	}
 
 	CtrlAuthLogin = config.AppConfig.CtrlAuthLogin
 	CtrlAuthPasswd = config.AppConfig.CtrlAuthPasswd

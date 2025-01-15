@@ -1,20 +1,19 @@
 #!/bin/sh
 
 #app version
-major_version=0
-minor_version=9
+major_version=1
+minor_version=1
 build_num=0 #dynamic
 
-#stop docker
-echo "=== Stopping containers"
+#stop docker / delete containers and images
+echo "=== Stopping/deleting containers and images"
 docker-compose -f build/package/docker-compose-local-unified.yml down -v
 
-#remove all docker images
-docker rmi -f `docker images --format="{{.Repository}}:{{.Tag}}"`
+#remove all docker images (UNCOMMENT IF NEEDED)
+#docker rmi -f `sudo docker images --format="{{.Repository}}:{{.Tag}}"`
 
 
 #      Build app
-
 
 # Increment next build number
 
@@ -45,14 +44,6 @@ echo $build_num > $build_num_file
 export BUILD_VERSION="$major_version.$minor_version.$build_num"
 echo "env BUILD_VERSION: $BUILD_VERSION"
 
-# build env
-if [ "$1" = "prod" ]; then
-  export BUILD_ENV="prod"
-else
-  export BUILD_ENV="dev"
-fi
-
-echo "env BUILD_ENV: " $BUILD_ENV
 
 # Build aux-srv
 echo ""
@@ -65,7 +56,7 @@ rm -f aux-srv/out/assistant-out
 #import modules
 cd aux-srv/ && go mod init instantchat.rooms/instantchat/aux-srv
 
-CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildVersion=$BUILD_VERSION -X main.BuildEnv=$BUILD_ENV" -o out/aux-srv-out ./cmd/aux-srv
+CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildVersion=$BUILD_VERSION" -o out/aux-srv-out ./cmd/aux-srv
 #build deploy-assistant
 cd ../build/deploy-assistant && go mod init instantchat.rooms/instantchat/deploy-assistant
 CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildVersion=$BUILD_VERSION" -o ../../aux-srv/out/assistant-out ./

@@ -3,7 +3,7 @@ package url_preview
 import (
 	"bytes"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"strings"
@@ -65,24 +65,25 @@ var urlPreviewClient = &http.Client{
 var urlToPreviewInfoCache = map[string]*UrlPreviewInfoCacheItem{}
 var urlToPreviewInfoCacheMutex = sync.Mutex{}
 
+// returning copy of UrlPreviewInfo structure so doesnt matter if contents of original one gets overriden after we returned
 func GetUrlPreviewInfo(url string) (UrlPreviewInfo, error) {
 	//if URL is not tracked yet - put it into cache right away (to later utilize cache item lock)
 	urlToPreviewInfoCacheMutex.Lock()
 
-	_, urlAlreadyExistsInCache := urlToPreviewInfoCache[url]
+	urlPreviewCacheItem, urlAlreadyExistsInCache := urlToPreviewInfoCache[url]
 
 	if !urlAlreadyExistsInCache {
-		urlToPreviewInfoCache[url] = &UrlPreviewInfoCacheItem{
+		urlPreviewCacheItem = &UrlPreviewInfoCacheItem{
 			urlLock:            sync.Mutex{},
 			lastCheckTimestamp: 0,
 			lastErrorTimestamp: 0,
 			urlPreviewInfoData: UrlPreviewInfo{},
 		}
+
+		urlToPreviewInfoCache[url] = urlPreviewCacheItem
 	}
 
 	urlToPreviewInfoCacheMutex.Unlock()
-
-	urlPreviewCacheItem, _ := urlToPreviewInfoCache[url]
 
 	//lock current URL's cache item to prevent concurrent queries to same URL
 	urlPreviewCacheItem.urlLock.Lock()
@@ -127,7 +128,7 @@ func GetUrlPreviewInfo(url string) (UrlPreviewInfo, error) {
 
 			if r.ContentLength > 0 && r.ContentLength <= PreviewImageAllowedSizeMaxBytes {
 				//body bytes are actually read from server only at 1st call
-				bodyBytes, err := ioutil.ReadAll(r.Body)
+				bodyBytes, err := io.ReadAll(r.Body)
 
 				if err != nil {
 					util.LogTrace("Failed to read image body for URL '%s'. Error: %s", url, err)

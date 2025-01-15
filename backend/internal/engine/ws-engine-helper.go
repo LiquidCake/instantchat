@@ -10,7 +10,8 @@ import (
 
 const MaxRoomDescriptionLength = 400
 
-func shrinkRoomMessagesMap(room *domain_structures.Room) {
+// must be executed under room lock
+func shrinkRoomMessagesMap(room *domain_structures.Room) int64 {
 	//sort existing messages by id to be able to cut older half
 	messagesArray := make([]*domain_structures.RoomMessage, len(room.RoomMessages))
 
@@ -24,8 +25,7 @@ func shrinkRoomMessagesMap(room *domain_structures.Room) {
 		return messagesArray[i].Id < messagesArray[j].Id
 	})
 
-	newMessagesArray := make([]*domain_structures.RoomMessage, 0)
-	newMessagesArray = append([]*domain_structures.RoomMessage{}, messagesArray[RoomMessagesLimit/2:]...)
+	newMessagesArray := append([]*domain_structures.RoomMessage{}, messagesArray[RoomMessagesLimit/2:]...)
 
 	newRoomMessagesMap := make(map[int64]*domain_structures.RoomMessage, len(newMessagesArray))
 
@@ -34,8 +34,12 @@ func shrinkRoomMessagesMap(room *domain_structures.Room) {
 		newRoomMessagesMap[msg.Id] = msg
 	}
 
+	lowestRemainingMessageId := newMessagesArray[0].Id
+
 	room.RoomMessages = newRoomMessagesMap
 	room.RoomMessagesLen = len(room.RoomMessages)
+
+	return lowestRemainingMessageId
 }
 
 func copyMessageAsDTO(orig *domain_structures.RoomMessage) domain_structures.RoomMessageDTO {
@@ -139,6 +143,27 @@ func copyAllRoomMessagesAsDTOArray(roomMessages *map[int64]*domain_structures.Ro
 	return &dtoArray
 }
 
+func copyAllRoomUsersList(room *domain_structures.Room) *[]domain_structures.RoomUserDTO {
+	var allRoomUsersCopy []domain_structures.RoomUserDTO
+
+	for _, user := range room.AllRoomAuthorizedUsersBySessionUUID {
+		//safe copy of current variable values
+		userInRoomUUID := user.UserInRoomUUID
+		userName := user.UserName
+		isAnonName := user.IsAnonName
+		isOnlineInRoom := isUserOnlineInRoom(room, user.UserInRoomUUID)
+
+		allRoomUsersCopy = append(allRoomUsersCopy, domain_structures.RoomUserDTO{
+			UserInRoomUUID: &userInRoomUUID,
+			UserName:       &userName,
+			IsAnonName:     &isAnonName,
+			IsOnlineInRoom: &isOnlineInRoom,
+		})
+	}
+
+	return &allRoomUsersCopy
+}
+
 func findSocketBySessionUUID(clientSocketsByUUID *map[string]*domain_structures.WebSocket, sessionUUID string) *domain_structures.WebSocket {
 	for _, socket := range *clientSocketsByUUID {
 		if socket.SessionUUID == sessionUUID {
@@ -199,10 +224,11 @@ func validateRoomDescription(roomDescription string) error {
 	if len([]rune(roomDescriptionDecoded)) > MaxRoomDescriptionLength {
 		return errors.New("invalid room description length")
 	}
+
 	return nil
 }
 
-func isUserOnlineInRoom(room *domain_structures.Room, userInRoomUUID string) *bool {
+func isUserOnlineInRoom(room *domain_structures.Room, userInRoomUUID string) bool {
 	isUserOnlineInRoom := false
 
 	for _, activeUserInRoomUUID := range room.ActiveRoomUserUUIDBySessionUUID {
@@ -212,5 +238,5 @@ func isUserOnlineInRoom(room *domain_structures.Room, userInRoomUUID string) *bo
 		}
 	}
 
-	return &isUserOnlineInRoom
+	return isUserOnlineInRoom
 }

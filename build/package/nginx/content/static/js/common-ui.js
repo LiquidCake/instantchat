@@ -5,10 +5,14 @@ const KEY_CODE_ARROW_UP = 38;
 
 const DESKTOP_MENU_SCREEN_MIN_WIDTH_PX = 992;
 
-const MENU_HIDDEN_LOCAL_STORAGE_KEY = 'menuHidden';
-const FOLK_PICKS_HIDDEN_LOCAL_STORAGE_KEY = 'folkPicksHidden';
-const SHOW_FULL_SMILES_LIST_LOCAL_STORAGE_KEY = 'showFullSmilesList';
-const ZOOM_NOTIF_LAST_SHOWN_AT_LOCAL_STORAGE_KEY = 'zoomNotifLastShownAt';
+const MENU_HIDDEN_LOCAL_STORAGE_KEY = 'MENU_HIDDEN';
+const FOLK_PICKS_HIDDEN_LOCAL_STORAGE_KEY = 'FOLK_PICKS_HIDDEN';
+const SHOW_FULL_SMILES_LIST_LOCAL_STORAGE_KEY = 'SHOW_FULL_SMILES_LIST';
+const ZOOM_NOTIF_LAST_SHOWN_AT_LOCAL_STORAGE_KEY = 'ZOOM_NOTIF_LAST_SHOWN_AT';
+const UI_THEME_LOCAL_STORAGE_KEY = 'UI_THEME';
+
+const UI_THEME_LIGHT = 'light';
+const UI_THEME_DARK  = 'dark';
 
 /* DOM objects references */
 
@@ -23,6 +27,8 @@ const $mainOverlay = $('.main-overlay');
 const $spinnerOverlay = $('.spinner-overlay');
 const $spinnerOverlayMidContentWr = $('.spinner-overlay-mid-content-wr');
 
+const $pageInitOverlay = $('.page-init-overlay');
+
 const $mainHeader = $('.main-navbar');
 const $mainWr = $('.main-wr');
 
@@ -32,13 +38,24 @@ const $recentRoomsLink = $('.main-sidebar-recent-rooms');
 const $recentRoomsClose = $('.recent-rooms-close');
 const $recentRoomsPopup = $('.recent-rooms-popup');
 
+const $preferencesLink = $('.main-sidebar-preferences');
+const $preferencesClose = $('.preferences-close');
+const $preferencesPopup = $('.preferences-popup');
+
+const $preferencesKeyRecordInput = $('#preferences-key-record-input');
+const $preferencesKeyRecordBtn = $('#preferences-key-record-btn');
+
+const $preferencesKeyThemeLight = $('#preferences-theme-light-btn');
+const $preferencesKeyThemeDark = $('#preferences-theme-dark-btn');
+
+const $preferencesModeKeyWr = $('.preferences-mode-key-wr');
+
 const $pageCommonMobileMenuToggle = $('.page-common-toggle-mobile-menu');
 
 const $recentRoomsWr = $("#recent-rooms-wr");
 
 const $cookieWarning = $(".cookie-warning");
 const $cookieWarningAgree = $(".cookie-warning-agree");
-
 
 /* Variables */
 
@@ -47,15 +64,114 @@ let currentViewportHeight;
 
 let swipingBehaviourAllowed = true;
 
+let preferencesKeyRecordingInProgress = false;
+let preferencesSelectedKeyCode = null;
+
+let selectedUITheme = null;
+
 function commonPageUIInit () {
     const cookiesAccepted = LOCAL_STORAGE.getItem(COOKIES_ACCEPTED_LOCAL_STORAGE_KEY);
 
     if (!cookiesAccepted) {
-        $cookieWarning.css('display', 'block');
-        $cookieWarningAgree.on('click', function () {
-            LOCAL_STORAGE.setItem(COOKIES_ACCEPTED_LOCAL_STORAGE_KEY, new Date().getTime() + '');
-            $cookieWarning.css('display', 'none');
-        });
+        showCookieWarning();
+    }
+
+    const selectedUIThemeVal = LOCAL_STORAGE.getItem(UI_THEME_LOCAL_STORAGE_KEY);
+
+    if (selectedUIThemeVal) {
+        selectedUITheme = selectedUIThemeVal;
+    } else {
+        const osIsInDarkTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        selectedUITheme = osIsInDarkTheme ? UI_THEME_DARK : UI_THEME_LIGHT;
+    }
+
+    initUIColorTheme();
+
+    $preferencesKeyThemeLight.on('click', function () {
+        selectedUITheme = UI_THEME_LIGHT;
+        LOCAL_STORAGE.setItem(UI_THEME_LOCAL_STORAGE_KEY, UI_THEME_LIGHT);
+
+        initUIColorTheme();
+    });
+
+    $preferencesKeyThemeDark.on('click', function () {
+        selectedUITheme = UI_THEME_DARK;
+        LOCAL_STORAGE.setItem(UI_THEME_LOCAL_STORAGE_KEY, UI_THEME_DARK);
+
+        initUIColorTheme();
+    });
+
+    $preferencesKeyRecordInput.on('focusin', function () {
+        preferencesKeyRecordingInProgress = true;
+
+        $preferencesKeyRecordBtn.removeClass('background-greyed');
+        $preferencesKeyRecordInput.addClass('preferences-key-record-input-active');
+    });
+
+    $preferencesKeyRecordInput.on('keydown', function (e) {
+        stopPropagationAndDefault(e);
+
+        //on keydown (!) event codes will be same as in win32 libs
+        preferencesSelectedKeyCode = e.keyCode;
+
+        let keyName = keycodesToNames[preferencesSelectedKeyCode];
+
+        if (keyName === undefined) {
+            keyName = "unknown";
+        }
+
+        $preferencesKeyRecordInput.val(keyName);
+    });
+
+    //handle window mode change key actions
+
+    let storedChangeWindowModeKey = LOCAL_STORAGE.getItem(WEBVIEW_CHANGE_WINDOW_MODE_KEY_LOCAL_STORAGE_KEY);
+
+    if (!storedChangeWindowModeKey) {
+        storedChangeWindowModeKey = WEBVIEW_CHANGE_WINDOW_MODE_KEY_DEFAULT;
+    }
+
+    LOCAL_STORAGE.setItem(WEBVIEW_CHANGE_WINDOW_MODE_KEY_LOCAL_STORAGE_KEY, storedChangeWindowModeKey);
+
+    postMessageToWebview(WEB_COMMAND_CHANGE_WINDOW_MODE_KEY + storedChangeWindowModeKey);
+
+    preferencesSelectedKeyCode = storedChangeWindowModeKey;
+
+    const keyName = keycodesToNames[storedChangeWindowModeKey];
+    $preferencesKeyRecordInput.val(keyName);
+    changeRoomInfoOverlayKeyIndicator(keyName);
+
+    $preferencesKeyRecordBtn.on('click', function () {
+        if (preferencesKeyRecordingInProgress) {
+            const keyName = keycodesToNames[preferencesSelectedKeyCode];
+
+            //unknown key
+            if (keyName === undefined) {
+                return;
+            }
+
+            LOCAL_STORAGE.setItem(WEBVIEW_CHANGE_WINDOW_MODE_KEY_LOCAL_STORAGE_KEY, preferencesSelectedKeyCode);
+
+            postMessageToWebview(WEB_COMMAND_CHANGE_WINDOW_MODE_KEY + preferencesSelectedKeyCode);
+
+            $preferencesKeyRecordInput.removeClass('preferences-key-record-input-active');
+
+            $preferencesKeyRecordInput.val(keyName);
+            changeRoomInfoOverlayKeyIndicator(keyName);
+
+            setShowChangeOverlayModeFlag(true);
+            tryShowRoomInfoOverlayKeyWr();
+
+            $preferencesKeyRecordBtn.addClass('background-greyed');
+
+            preferencesKeyRecordingInProgress = false;
+        }
+    });
+
+    //check global var set by client app (if any)
+    if (window.clientType === 'win') {
+        $preferencesModeKeyWr.removeClass('d-none');
     }
 }
 
@@ -65,7 +181,7 @@ function isMobileDevice () {
     return check;
 }
 
-function animateBlockForAttention($elem, isSuccess, duration) {
+function animateBlockForAttention ($elem, isSuccess, duration) {
     if ($elem.attr('data-is-animation-in-progress') !== 'true') {
         $elem.attr('data-is-animation-in-progress', true);
 
@@ -75,40 +191,57 @@ function animateBlockForAttention($elem, isSuccess, duration) {
         $elem.animate({backgroundColor: toColor}, duration || 500, function () {
             $elem.animate({backgroundColor: origBgColor}, duration || 500, function () {
                 $elem.removeAttr('data-is-animation-in-progress');
+                $elem.css('background-color', '');
             });
         });
     }
 }
 
-function showMenuMobile() {
+function showMenuMobile () {
     $sidebarMobileWr.css('display', 'block');
     showMainOverlay();
 }
 
-function hideMenuMobile() {
+function hideMenuMobile () {
     if ($sidebarMobileWr.css('display') !== 'none') {
         $sidebarMobileWr.css('display', 'none');
         hideMainOverlay();
     }
 }
 
-function showMyRecentRoomsPopup() {
+function showMyRecentRoomsPopup () {
+    cancelMessageTextSelectionMode();
+
     $recentRoomsPopup.css('display', 'block');
     showMainOverlay();
 }
 
-function hideMyRecentRoomsPopup() {
+function hideMyRecentRoomsPopup () {
     if ($recentRoomsPopup.css('display') !== 'none') {
         $recentRoomsPopup.css('display', 'none');
         hideMainOverlay();
     }
 }
 
-function showMainOverlay() {
+function showPreferencesPopup () {
+    cancelMessageTextSelectionMode();
+
+    $preferencesPopup.css('display', 'block');
+    showMainOverlay();
+}
+
+function hidePreferencesPopup () {
+    if ($preferencesPopup.css('display') !== 'none') {
+        $preferencesPopup.css('display', 'none');
+        hideMainOverlay();
+    }
+}
+
+function showMainOverlay () {
     $mainOverlay.removeClass('d-none');
 }
 
-function hideMainOverlay() {
+function hideMainOverlay () {
     $mainOverlay.addClass('d-none');
 }
 
@@ -131,8 +264,10 @@ function scrollToTargetMsg ($targetMsgElement) {
     if ($targetMsgElement.attr('data-is-animation-in-progress') !== 'true') {
         $targetMsgElement.attr('data-is-animation-in-progress', true);
 
-        $targetMsgElement.animate({backgroundColor: '#91e6a9'}, 700, function () {
-            $targetMsgElement.animate({backgroundColor: '#fff'}, 700, function () {
+        $targetMsgElement.animate({backgroundColor: selectedUITheme === UI_THEME_DARK ? '#1c5e2f' : '#91e6a9'}, 700,
+        function () {
+            $targetMsgElement.animate({backgroundColor: selectedUITheme === UI_THEME_DARK ? '#272826' : '#fff'}, 700,
+            function () {
                 $targetMsgElement.css('background-color', '');
                 $targetMsgElement.removeAttr('data-is-animation-in-progress');
             });
@@ -303,7 +438,8 @@ function drawRecentRoom ($recentRoomsWr, room, roomLinkOnClickCallback) {
     $roomLink.on('click', roomLinkOnClickCallback);
 
     const $roomRemoveLink = $('<a href="javascript:void(0);" title="remove" class="recent-rooms-remove" data-room-name="' + room.roomName + '">');
-    $roomRemoveLink.append($('<img src="/static/' + BUILD_NUMBER + '/img/trash-2.svg" alt="remove"/>'));
+    $roomRemoveLink.append($('<img class="image-theme-light" src="/static/' + BUILD_NUMBER + '/img/trash-2.svg" alt="remove"/>'));
+    $roomRemoveLink.append($('<img class="image-theme-dark" src="/static/' + BUILD_NUMBER + '/img/trash-2-yellow.svg" alt="remove"/>'));
 
     $roomRemoveLink.on('click', function (e) {
         const removeLink = $(e.currentTarget);
@@ -348,6 +484,8 @@ function drawRecentRoom ($recentRoomsWr, room, roomLinkOnClickCallback) {
     $roomBlock.append($clearfix);
 
     $recentRoomsWr.append($roomBlock);
+
+    redrawThemeableImages();
 }
 
 function getClickCoordinatesInsideElement(element, event) {
@@ -399,4 +537,121 @@ function hideSpinnerOverlay() {
 
 function scrollBlockBottom (block) {
     block.scrollIntoView(false);
+}
+
+function setShowChangeOverlayModeFlag (flag) {
+    LOCAL_STORAGE.setItem(SHOW_WINDOW_MODE_KEY_ALERT_LOCAL_STORAGE_KEY, flag);
+}
+
+function getShowChangeOverlayModeFlag () {
+    return LOCAL_STORAGE.getItem(SHOW_WINDOW_MODE_KEY_ALERT_LOCAL_STORAGE_KEY) === 'true';
+}
+
+function initUIColorTheme() {
+    const $themeableBlocks = $(
+        '.room-messages-wr, ' +
+        '.room-messages-init-msg, ' +
+        '.user-message-textarea-wr, ' +
+        '.room-info-addit-mid-right-labels, ' +
+        '.main-navbar, ' +
+        '.room-info-addit-mid-right-buttons-leave, ' +
+        '.main-sidebar-top-item-1, ' +
+        '.picks-wr, ' +
+        '.picks-messages-wr, ' +
+        '.picks-bot-wr, ' +
+        '.main-sidebar-wr, ' +
+        '.share-room-btn, ' +
+        '.recent-rooms-popup, ' +
+        '.preferences-popup, ' +
+        '#recent-rooms-wr, ' +
+        '#preferences-wr, ' +
+        '#client-agreement-wr, ' +
+        '.references-block-wr' +
+        '.room-form-join-create, ' +
+        '.room-form-row, ' +
+        '.home-common-room-suggestions-wr, ' +
+        '.page-about-content-wr, ' +
+        '.page-home-container-main-center-wr, ' +
+        '.main-sidebar-mobile-wr, ' +
+        '.cookie-warning, ' +
+        '.cookie-warning-agree, ' +
+        '.client-agreement-popup, ' +
+        '.room-title-link-change-input, ' +
+        '.room-info-addit-alt-share-manual-label, ' +
+        '.room-info-addit-share-btn, ' +
+        '.room-descr-title, ' +
+        '.room-descr-text, ' +
+        '.room-descr, ' +
+        '.room-info-online-users, ' +
+        '.room-info-online-title, ' +
+        '#room-descr-change-link, ' +
+        '#room-descr-change-input, ' +
+        '.share-room-wr, ' +
+        '.share-room-manual-url, ' +
+        '#user-message-joined-as-change-link, ' +
+        '#user-message-joined-as-change-input, ' +
+        '.user-message-send-btn, ' +
+        '.message-edit-cancel, ' +
+        '.user-message-wr-toggle-folk-picks, ' +
+        '.user-message-wr-toggle-mobile-menu, ' +
+        '.room-info-overlay-key-wr, ' +
+        '.user-message-collapse-compact-toggle-label, ' +
+        '.search-bar-input, ' +
+        '.room-info-wr-main-navbar, ' +
+        '.bots-main-wr, ' +
+        '.chat-scroll-overlay'
+    );
+
+    //light is default
+    if (selectedUITheme === UI_THEME_DARK) {
+        $body.addClass('theme-dark');
+        $themeableBlocks.addClass('theme-dark');
+    } else {
+        $body.removeClass('theme-dark');
+        $themeableBlocks.removeClass('theme-dark');
+    }
+
+    redrawThemeableImages();
+}
+
+function redrawThemeableImages () {
+    if (selectedUITheme === UI_THEME_DARK) {
+        $('.image-theme-light').addClass('d-none');
+        $('.image-theme-dark').removeClass('d-none');
+    } else {
+        $('.image-theme-light').removeClass('d-none');
+        $('.image-theme-dark').addClass('d-none');
+    }
+}
+
+function showCookieWarning () {
+    showCookieWarningPopup();
+}
+
+function showCookieWarningPopup () {
+    $cookieWarning.css('display', 'block');
+    $cookieWarningAgree.on('click', function () {
+        LOCAL_STORAGE.setItem(COOKIES_ACCEPTED_LOCAL_STORAGE_KEY, new Date().getTime() + '');
+        $cookieWarning.css('display', 'none');
+    });
+}
+
+function activateUserMessageInputAfterWindowWasActivated () {
+    //stub for non-room page
+}
+
+function deactivateUserMessageInputAfterWindowWasDeactivated () {
+    //stub for non-room page
+}
+
+function changeRoomInfoOverlayKeyIndicator (newKeyName) {
+    //stub for non-room page
+}
+
+function tryShowRoomInfoOverlayKeyWr () {
+    //stub for non-room page
+}
+
+function cancelMessageTextSelectionMode () {
+    //stub for non-room page
 }

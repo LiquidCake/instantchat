@@ -64,8 +64,8 @@ services:
       - ./grafana/setup.sh:/setup.sh
     entrypoint: /setup.sh
     environment:
-      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_METRICS_ENABLED=false
     restart: unless-stopped

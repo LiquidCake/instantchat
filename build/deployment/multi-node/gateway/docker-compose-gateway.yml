@@ -26,6 +26,8 @@ services:
     environment:
       - LOG_LEVEL=INFO
       #- LOG_LEVEL=TRACE
+      - CTRL_AUTH_LOGIN=admin132
+      - CTRL_AUTH_PASSWD=password132
     ports:
       - '8080:8080'
     volumes:

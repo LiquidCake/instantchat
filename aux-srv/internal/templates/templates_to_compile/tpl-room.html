@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no">
-    <meta name="description" content="Instantchat - instant chat rooms">
+    <meta name="description" content="Myinstantchat">
     <meta name="author" content="">
 
 	<!-- open graph -->
-	<meta property="og:description" content="Instantchat - instant chat rooms" />
-	<meta property="og:title" content="{{.requestedRoom}} - Instantchat" />
+	<meta property="og:description" content="Myinstantchat" />
+	<meta property="og:title" content="{{.requestedRoom}} - Myinstantchat" />
 	<meta property="og:type"  content="website" />
 	<meta property="og:url"   content="{{.httpSchema}}://{{.domain}}" />
 	<meta property="og:locale" content="en_GB" />
 
 	<meta property="og:image" content="{{.httpSchema}}://{{.domain}}/static/${BUILD_VERSION}/img/site-image.png" />
-	<meta property="og:image:alt"   content="Instantchat" />
+	<meta property="og:image:alt"   content="Myinstantchat" />
 	<meta property="og:image:width" content="72" />
 	<meta property="og:image:height" content="50" />
 	<meta property="og:image:secure_url" content="{{.httpSchema}}://{{.domain}}/static/${BUILD_VERSION}/img/site-image.png" />
@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="/static/${BUILD_VERSION}/favicon/favicon.png">
     <link rel="icon" type="image/png" href="/static/${BUILD_VERSION}/favicon/favicon.png">
 
-    <title>{{.requestedRoom}} - Instantchat</title>
+    <title>{{.requestedRoom}} - Myinstantchat</title>
 
     <!-- lib -->
     <link href="/static/${BUILD_VERSION}/css/dist/bootstrap.min.css" rel="stylesheet">
@@ -37,7 +37,7 @@
 <nav class="container-fluid main-navbar main-navbar-page-room">
 	<div class="row">
 		<div class="col-lg-2 navbar-brand-wr d-none d-lg-block">
-			<a class="navbar-brand-link" href="/">instant<span class="brand-green-decor">c</span>hat</a>
+			<a class="navbar-brand-link" href="/">myinstant<span class="brand-green-decor">chat</span></a>
 		</div>
 
 		<div class="col-12 col-lg-10 navbar-room-and-logo-wr">
@@ -63,8 +63,8 @@
 					<ul class="col-1 col-xl-3 header-right navbar-nav">
 						<li class="nav-item text-nowrap">
 							<span class="header-right-text">instant chat rooms</span>
-							<a href="/" title="Instantchat">
-								<img class="header-right-logo" src="/static/${BUILD_VERSION}/img/logo.png" title="Instantchat" alt="Instantchat" />
+							<a href="/" title="Myinstantchat">
+								<img class="header-right-logo" src="/static/${BUILD_VERSION}/img/logo.png" title="Myinstantchat" alt="Myinstantchat" />
 							</a>
 						</li>
 					</ul>
@@ -75,7 +75,6 @@
 </nav>
 
 <!-- below blocks exist as 1 instance and are appended where needed -->
-
 <div class="message-context-menu noselect d-none">
 	<a id="message-tooltip-goto" href="javascript:void(0);">
 		<img src="/static/${BUILD_VERSION}/img/corner-up-left.svg" title="goto" alt="gt">
@@ -115,25 +114,45 @@
 
 <img id="drawing-full-size-view" class="d-none" />
 
+<div class="page-init-overlay">
+	<div class="page-init-overlay-mid">
+		<div class="page-init-overlay-mid-content-wr spinner-overlay-mid-content-wr">
+			<img src="/static/${BUILD_VERSION}/img/logo.png" class="page-init-overlay-mid-content-img">
+		</div>
+	</div>
+</div>
+
 <div class="global-transparent-overlay d-none"></div>
 
 <div class="spinner-overlay d-none">
 	<div class="spinner-overlay-mid">
+		<div class="spinner-overlay-backup-wr d-none">
+			<img src="/static/${BUILD_VERSION}/img/save.svg" title="download chat messages" class="spinner-overlay-backup-img">
+		</div>
+
 		<div class="spinner-overlay-mid-content-wr">
-			<img src="/static/${BUILD_VERSION}/img/spinner.gif" />
+			<img src="/static/${BUILD_VERSION}/img/spinner.gif" class="spinner-overlay-mid-content-img" />
 			<div class="spinner-overlay-label">connecting...</div>
 		</div>
 
 		<div class="build-version-changed-wr d-none">
 			<h2 class="build-version-changed">server version has changed, please reload page</h2>
-			<img src="/static/${BUILD_VERSION}/img/refresh-ccw.svg" />
+			<img src="/static/${BUILD_VERSION}/img/refresh-ccw.svg" class="build-version-changed-img" />
 		</div>
 
 		<div class="room-user-duplication-wr d-none">
 			<h2 class="build-version-changed">you've connected to this room from another browser tab</h2>
-			<img src="/static/${BUILD_VERSION}/img/refresh-ccw.svg" />
+			<img src="/static/${BUILD_VERSION}/img/refresh-ccw.svg" class="room-user-duplication-img" />
 		</div>
 	</div>
+</div>
+
+<div class="user-confirm-modal-wr d-none">
+	<div class="user-confirm-modal-text"></div>
+
+	<input id="user-confirm-modal-input" class="d-none" type="text" />
+
+	<a href="javascript:void(0);" id="confirm-modal-btn" class="user-input-confirm-button">confirm</a>
 </div>
 
 <!-- main content -->
@@ -151,13 +170,11 @@
 		<div class="user-drawing-overlay d-none"></div>
 
 		<div class="user-drawing-modal-wr d-none">
-			<div class="user-drawing-modal-text">
-
-			</div>
+			<div class="user-drawing-modal-text"></div>
 
 			<input id="user-drawing-modal-input" class="d-none" type="text" />
 
-			<a href="javascript:void(0);" id="drawing-modal-btn" class="user-drawing-modal-btn user-input-drawing-button">confirm</a>
+			<a href="javascript:void(0);" id="drawing-modal-btn" class="user-input-drawing-button">confirm</a>
 		</div>
 
 		<div class="user-input-canvas-wr">
@@ -172,7 +189,7 @@
 				<div class="clearfix"></div>
 			</div>
 
-			<div id="drawing-mode-options">
+			<div id="drawing-mode-options" data-base-src="/static/${BUILD_VERSION}/img">
 				<div>
 					<label for="drawing-mode-selector">Tool:</label>
 					<select id="drawing-mode-selector">
@@ -186,7 +203,20 @@
 						<option value="square">square pattern</option>
 						<option value="diamond">diamond pattern</option>
 
-						<option value="texture" id="draw-mode-texure" data-base-src="/static/${BUILD_VERSION}/img/textures/">texture</option>
+						<option value="texture-bark" id="draw-mode-texture-bark">texture bark</option>
+						<option value="texture-brick" id="draw-mode-texture-brick">texture brick</option>
+						<option value="texture-bronze" id="draw-mode-texture-bronze">texture bronze</option>
+						<option value="texture-dirt" id="draw-mode-texture-dirt">texture dirt</option>
+						<option value="texture-dirt2" id="draw-mode-texture-dirt2">texture dirt2</option>
+						<option value="texture-fabric" id="draw-mode-texture-fabric">texture fabric</option>
+						<option value="texture-granit" id="draw-mode-texture-granit">texture granit</option>
+						<option value="texture-hexagone" id="draw-mode-texture-hexagone">texture hexagone</option>
+						<option value="texture-leaf" id="draw-mode-texture-leaf">texture leaf</option>
+						<option value="texture-leaf2" id="draw-mode-texture-leaf2">texture leaf2</option>
+						<option value="texture-leather" id="draw-mode-texture-leather">texture leather</option>
+						<option value="texture-stone" id="draw-mode-texture-stone">texture stone</option>
+						<option value="texture-stone2" id="draw-mode-texture-stone2">texture stone2</option>
+						<option value="texture-tree" id="draw-mode-texture-tree">texture tree</option>
 					</select>
 
 					<img src="/static/${BUILD_VERSION}/img/type.svg" class="user-drawing-text-img" title="text" alt="text" />
@@ -299,16 +329,48 @@
 	<div class="container-fluid">
 		<div class="main-overlay d-none"></div>
 
+		<div class="client-agreement-popup d-none">
+			<div id="client-agreement-wr">
+			{{block "about-fragment" .}}fragment{{end}}
+			</div>
+			<p class="client-agreement-accept-btn">I agree</p>
+		</div>
+
 		<div class="recent-rooms-popup">
 			<div>
 				<h2 class="recent-rooms-title">
 					my recent rooms
 				</h2>
-				<img class="recent-rooms-close" src="/static/${BUILD_VERSION}/img/x-square.svg" alt="close" />
+				<img class="recent-rooms-close image-theme-light" src="/static/${BUILD_VERSION}/img/x-square.svg" alt="close"/>
+				<img class="recent-rooms-close image-theme-dark" src="/static/${BUILD_VERSION}/img/x-square-yellow.svg" alt="close"/>
 				<div class="clearfix"></div>
 			</div>
 
 			<div id="recent-rooms-wr"></div>
+		</div>
+
+		<div class="preferences-popup">
+			<div>
+				<h2 class="preferences-title">
+					preferences
+				</h2>
+				<img class="preferences-close image-theme-light" src="/static/${BUILD_VERSION}/img/x-square.svg" alt="close"/>
+				<img class="preferences-close image-theme-dark" src="/static/${BUILD_VERSION}/img/x-square-yellow.svg" alt="close"/>
+				<div class="clearfix"></div>
+			</div>
+
+			<div id="preferences-wr">
+				<div class="preferences-block-wr">
+					<p class="preferences-change-setting-title">change color theme:</p>
+					<a id="preferences-theme-light-btn" class="share-room-btn preferences-setting-record-btn" href="javascript:void(0);">light</a>
+					<a id="preferences-theme-dark-btn" class="share-room-btn preferences-setting-record-btn" href="javascript:void(0);">dark</a>
+				</div>
+				<div class="preferences-block-wr preferences-mode-key-wr d-none">
+					<p class="preferences-change-setting-title">change overlay mode key:</p>
+					<input id="preferences-key-record-input" />
+					<a id="preferences-key-record-btn" class="share-room-btn preferences-setting-record-btn background-greyed" href="javascript:void(0);">save key</a>
+				</div>
+			</div>
 		</div>
 
 		<div class="cookie-warning">
@@ -325,7 +387,7 @@
 			<p class="share-room-copied-alert">Link is copied to your clipboard!</p>
 			<p class="share-room-manual-text">or here it is for manual copying:</p>
 			<p class="share-room-manual-url">{{.httpSchema}}://{{.domain}}/{{.requestedRoom}}</p>
-			<p class="share-room-has-password d-none">*NOTE: this room has <b>password</b> set!</p>
+			<p class="share-room-has-password d-none">*NOTE: this room is protected by <b>password</b>!</p>
 		</div>
 
 		<div class="row">
@@ -341,8 +403,18 @@
 							</a>
 						</li>
 						<li class="nav-item push-bot-mid">
-							<a idtitle="my recent #rooms" href="javascript:void(0);" class="main-sidebar-recent-rooms main-sidebar-top-item-2">
+							<a title="my recent #rooms" href="javascript:void(0);" class="main-sidebar-recent-rooms main-sidebar-top-item-2">
 								my recent rooms
+							</a>
+						</li>
+						<li class="nav-item">
+							<a title="preferences" href="javascript:void(0);" class="main-sidebar-preferences main-sidebar-top-item-2">
+								preferences
+							</a>
+						</li>
+						<li class="nav-item push-bot-mid">
+							<a title="connection methods" href="/connection-methods" class="main-sidebar-download-app main-sidebar-top-item-2">
+								connection methods
 							</a>
 						</li>
 						<li class="nav-item main-sidebar-top-item-push">
@@ -353,10 +425,20 @@
 								about the service
 							</a>
 						</li>
+						<li class="nav-item main-sidebar-top-item-push">
+							<a title="privacy policy" href="/privacy-policy" class="main-sidebar-top-item-2 main-sidebar-bot-item section-info-item">
+								privacy policy
+							</a>
+						</li>
+						<li class="nav-item main-sidebar-top-item-push">
+							<a title="terms of service" href="/terms-of-service" class="main-sidebar-top-item-2 main-sidebar-bot-item section-info-item">
+								terms of service
+							</a>
+						</li>
 					</ul>
 				</div>
 
-				<img class="menu-img-placeholder" src="/static/${BUILD_VERSION}/img/logo.png" title="Instantchat" alt="Instantchat">
+				<img class="menu-img-placeholder" src="/static/${BUILD_VERSION}/img/logo.png" title="Myinstantchat" alt="Myinstantchat">
 
 				<div class="menu-bot-info-wr">
 					<span class="menu-bot-info-title">2022</span>
@@ -375,8 +457,18 @@
 							</a>
 						</li>
 						<li class="nav-item push-bot-mid">
-							<a idtitle="my recent #rooms" href="javascript:void(0);" class="main-sidebar-recent-rooms main-sidebar-top-item-2">
+							<a title="my recent #rooms" href="javascript:void(0);" class="main-sidebar-recent-rooms main-sidebar-top-item-2">
 								my recent rooms
+							</a>
+						</li>
+						<li class="nav-item">
+							<a title="preferences" href="javascript:void(0);" class="main-sidebar-preferences main-sidebar-top-item-2">
+								preferences
+							</a>
+						</li>
+						<li class="nav-item push-bot-mid">
+							<a title="connection methods" href="/connection-methods" class="main-sidebar-download-app main-sidebar-top-item-2">
+								connection methods
 							</a>
 						</li>
 						<li class="nav-item main-sidebar-top-item-push">
@@ -387,10 +479,20 @@
 								about the service
 							</a>
 						</li>
+						<li class="nav-item main-sidebar-top-item-push">
+							<a title="privacy policy" href="/privacy-policy" class="main-sidebar-top-item-2 main-sidebar-bot-item section-info-item">
+								privacy policy
+							</a>
+						</li>
+						<li class="nav-item main-sidebar-top-item-push">
+							<a title="terms of service" href="/terms-of-service" class="main-sidebar-top-item-2 main-sidebar-bot-item section-info-item">
+								terms of service
+							</a>
+						</li>
 					</ul>
 				</div>
 
-				<img class="menu-img-placeholder" src="/static/${BUILD_VERSION}/img/logo.png" title="Instantchat" alt="Instantchat">
+				<img class="menu-img-placeholder" src="/static/${BUILD_VERSION}/img/logo.png" title="Myinstantchat" alt="Myinstantchat">
 
 				<div class="menu-bot-info-wr">
 					<span class="menu-bot-info-title">2022</span>
@@ -424,8 +526,8 @@
 
 												<ul class="col-1 header-right navbar-nav">
 													<li class="nav-item text-nowrap">
-														<a href="/" title="Instantchat">
-															<img class="header-right-logo" src="/static/${BUILD_VERSION}/img/logo.png" title="Instantchat" alt="Instantchat" />
+														<a href="/" title="Myinstantchat">
+															<img class="header-right-logo" src="/static/${BUILD_VERSION}/img/logo.png" title="Myinstantchat" alt="Myinstantchat" />
 														</a>
 													</li>
 												</ul>
@@ -433,7 +535,7 @@
 										</div>
 									</nav>
 
-									<div class="room-descr">
+									<div class="room-descr room-descr-border-normal">
 										<span class="room-descr-title">description: </span>
 										<span class="room-descr-text d-none"></span>
 
@@ -491,9 +593,21 @@
 
 								<div class="room-info-addit-bot-collapse-wr">
 									<div>
-										<img src="/static/${BUILD_VERSION}/img/share-2-black.svg" class="room-info-addit-bot-collapse-img room-info-addit-bot-collapse-share-img d-none" title="share" alt="share" />
-										<img src="/static/${BUILD_VERSION}/img/more-horizontal.svg" class="room-info-addit-bot-collapse-img" title="show/collapse" alt="toggle" />
+										<img src="/static/${BUILD_VERSION}/img/share-2-black.svg" class="room-info-addit-bot-collapse-img room-info-addit-bot-collapse-share-img image-theme-light d-none" title="share" alt="share" />
+										<img src="/static/${BUILD_VERSION}/img/share-2.svg" class="room-info-addit-bot-collapse-img room-info-addit-bot-collapse-share-img image-theme-dark d-none" title="share" alt="share" />
+										<img src="/static/${BUILD_VERSION}/img/more-horizontal.svg" class="room-info-addit-bot-collapse-img room-info-addit-bot-dots-img image-theme-light" title="show/collapse" alt="toggle" />
+										<img src="/static/${BUILD_VERSION}/img/more-horizontal-yellow.svg" class="room-info-addit-bot-collapse-img room-info-addit-bot-dots-img image-theme-dark" title="show/collapse" alt="toggle" />
+										<span class="room-info-addit-bot-collapse-password-note"></span>
+										<div class="clearfix"></div>
 									</div>
+								</div>
+
+								<div class="room-info-overlay-key-wr noselect d-none">
+									<p>
+										toggle overlay mode: press&nbsp;
+										<span class="room-info-overlay-key-indication">NUMPAD MULTIPLY</span>
+										<img src="/static/${BUILD_VERSION}/img/x-black.svg" class="room-info-overlay-key-close" title="close" alt="close" \>
+									</p>
 								</div>
 							</div>
 
@@ -531,52 +645,75 @@
 							</div>
 
 							<div class="user-message-wr">
+								<div class="top-notif-msg noselect"></div>
+								<div class="user-message-wr-notif-msg noselect"></div>
+								<div class="user-message-wr-error-msg noselect"></div>
+
 								<div class="chat-scroll-overlay noselect d-none">
 									scroll down
 								</div>
 
 								<div class="user-message-wr-collapse-wr noselect">
 									<div>
+										<label class="user-message-collapse-compact-toggle-label" for="user-message-collapse-compact-toggle">
+											<input type="checkbox" name="user-message-collapse-compact-toggle" id="user-message-collapse-compact-toggle">compact
+										</label>
+										<div class="user-message-collapse-preview d-none"></div>
 										<div class="user-message-wr-collapse-sending-indication d-none">sending...</div>
-										<img src="/static/${BUILD_VERSION}/img/more-horizontal.svg" class="user-message-wr-collapse-img" title="show/collapse" alt="toggle" />
+										<img src="/static/${BUILD_VERSION}/img/more-horizontal.svg" class="user-message-wr-collapse-img image-theme-light" title="show/collapse" alt="toggle" />
+										<img src="/static/${BUILD_VERSION}/img/more-horizontal-yellow.svg" class="user-message-wr-collapse-img image-theme-dark" title="show/collapse" alt="toggle" />
 									</div>
 								</div>
 
 								<div class="user-message-content-wr">
-									<div class="top-notif-msg noselect"></div>
-									<div class="user-message-wr-notif-msg noselect"></div>
-									<div class="user-message-wr-error-msg noselect"></div>
 
 									<div class="search-bar-wr d-none">
 										<input class="search-bar-input" placeholder="search..." />
-										<a class="search-bar-prev-btn"><img src="/static/${BUILD_VERSION}/img/arrow-up.svg" title="previous" /></a>
-										<a class="search-bar-next-btn"><img src="/static/${BUILD_VERSION}/img/arrow-down.svg" title="next" /></a>
+										<a class="search-bar-prev-btn">
+											<img src="/static/${BUILD_VERSION}/img/arrow-up.svg" class="image-theme-light" title="previous" />
+											<img src="/static/${BUILD_VERSION}/img/arrow-up-yellow.svg" class="image-theme-dark" title="previous" />
+										</a>
+										<a class="search-bar-next-btn">
+											<img src="/static/${BUILD_VERSION}/img/arrow-down.svg" class="image-theme-light" title="next" />
+											<img src="/static/${BUILD_VERSION}/img/arrow-down-yellow.svg" class="image-theme-dark" title="next" />
+										</a>
 									</div>
 
 									<div class="user-message-wr-toggle-mobile-menu noselect">
-										<img src="/static/${BUILD_VERSION}/img/menu-black.svg" title="menu" alt="menu"/>
+										<img src="/static/${BUILD_VERSION}/img/menu-black.svg" class="image-theme-light" title="menu" alt="menu"/>
+										<img src="/static/${BUILD_VERSION}/img/menu.svg" class="image-theme-dark" title="menu" alt="menu"/>
 									</div>
 
 									<div class="user-message-wr-toggle-search noselect">
-										<img src="/static/${BUILD_VERSION}/img/search.svg" title="search" alt="search"/>
+										<img src="/static/${BUILD_VERSION}/img/search.svg" class="image-theme-light" title="search" alt="search"/>
+										<img src="/static/${BUILD_VERSION}/img/search-yellow.svg" class="image-theme-dark" title="search" alt="search"/>
 									</div>
 
 									<div class="user-message-wr-toggle-bots noselect">
-										<img src="/static/${BUILD_VERSION}/img/activity.svg" title="bots" alt="bots"/>
+										<img src="/static/${BUILD_VERSION}/img/activity.svg" class="image-theme-light" title="bots" alt="bots"/>
+										<img src="/static/${BUILD_VERSION}/img/activity-yellow.svg" class="image-theme-dark" title="bots" alt="bots"/>
+									</div>
+
+									<div class="user-message-wr-backup noselect">
+										<img src="/static/${BUILD_VERSION}/img/save-black.svg" class="image-theme-light" title="download chat messages" alt="backup"/>
+										<img src="/static/${BUILD_VERSION}/img/save-yellow.svg" class="image-theme-dark" title="download chat messages" alt="backup"/>
 									</div>
 
 									<div class="user-message-wr-toggle-folk-picks noselect">
 										<span class="user-message-wr-toggle-label">show/hide</span>
 										<span>picks</span>
-										<img src="/static/${BUILD_VERSION}/img/chevrons-right.svg" title="show/hide picks" alt="toggle" />
+										<img src="/static/${BUILD_VERSION}/img/chevrons-right.svg" class="image-theme-light" title="show/hide picks" alt="toggle" />
+										<img src="/static/${BUILD_VERSION}/img/chevrons-right-yellow.svg" class="image-theme-dark" title="show/hide picks" alt="toggle" />
 									</div>
 
 									<div class="user-message-wr-toggle-input-drawing noselect">
-										<img src="/static/${BUILD_VERSION}/img/pen-tool.svg" title="draw" alt="draw" />
+										<img src="/static/${BUILD_VERSION}/img/pen-tool.svg" class="image-theme-light" title="draw" alt="draw" />
+										<img src="/static/${BUILD_VERSION}/img/pen-tool-yellow.svg" class="image-theme-dark" title="draw" alt="draw" />
 									</div>
 
 									<div class="user-message-wr-toggle-smiles noselect">
-										<img src="/static/${BUILD_VERSION}/img/smile.svg" title="smiles" alt="smiles" />
+										<img src="/static/${BUILD_VERSION}/img/smile.svg" class="image-theme-light" title="smiles" alt="smiles" />
+										<img src="/static/${BUILD_VERSION}/img/smile-yellow.svg" class="image-theme-dark" title="smiles" alt="smiles" />
 									</div>
 
 									<div class="clearfix"></div>
@@ -584,7 +721,8 @@
 									<div class="user-message-textarea-wr">
 
 										<div class="answer-to-user-wr d-none">
-											<img class="answer-to-user-close" src="/static/${BUILD_VERSION}/img/x-square.svg" title="cancel" alt="cancel" />
+											<img class="answer-to-user-close image-theme-light" src="/static/${BUILD_VERSION}/img/x-square.svg" title="cancel" alt="cancel" />
+											<img class="answer-to-user-close image-theme-dark" src="/static/${BUILD_VERSION}/img/x-square-yellow.svg" title="cancel" alt="cancel" />
 											<span class="answer-to-user-wr-title">to&nbsp;</span>
 											<div class="answer-to-user">
 												<span class="answer-to-user-anon-pref">anon&nbsp;</span>
@@ -593,7 +731,8 @@
 										</div>
 
 										<div class="answer-to-message-wr d-none">
-											<img class="answer-to-message-close" src="/static/${BUILD_VERSION}/img/x-square.svg" title="cancel" alt="cancel" />
+											<img class="answer-to-message-close image-theme-light" src="/static/${BUILD_VERSION}/img/x-square.svg" title="cancel" alt="cancel" />
+											<img class="answer-to-message-close image-theme-dark" src="/static/${BUILD_VERSION}/img/x-square-yellow.svg" title="cancel" alt="cancel" />
 											<div class="answer-to-message">
 												<span class="answer-to-message-id"></span>
 												<span class="reply-to-message-anon-pref">anon&nbsp;</span>
@@ -643,7 +782,7 @@
 							</div>
 
 							<div class="picks-bot-wr">
-								<img class="picks-bot-wr-img-placeholder" src="/static/${BUILD_VERSION}/img/logo.png" title="Instantchat" alt="Instantchat" />
+								<img class="picks-bot-wr-img-placeholder" src="/static/${BUILD_VERSION}/img/logo.png" title="Myinstantchat" alt="Myinstantchat" />
 							</div>
 						</div>
 					</div>
@@ -690,6 +829,8 @@
 	const HTTP_SCHEMA = "{{.httpSchema}}";    //placeholder is set by go html templating
 	const ROOM_NAME = formatRoomNameInput("{{.requestedRoom}}");
 	const backendError = "{{.error}}";
+	const CLIENT_AGREEMENT_VERSION = "{{.clientAgreementVersion}}";
+	const USER_DRAWING_ENABLED = "{{.userDrawingEnabled}}" === "true";
 
 	if (backendError) {
 		switch (backendError) {

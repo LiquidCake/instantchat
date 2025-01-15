@@ -11,6 +11,12 @@ COPY file-srv/out/file-srv-out ./file-srv
 
 COPY file-srv/internal/config/app-config.yml ./app-config.yml
 
+#copy ssl cert files
+COPY build/package/nginx/conf/ssl/ssl-bundle.crt /etc/ssl/ssl-bundle.crt
+COPY build/package/nginx/conf/ssl/cert.key /etc/ssl/cert.key
+
+RUN chmod 444 /etc/ssl/ssl-bundle.crt
+RUN chmod 444 /etc/ssl/cert.key
 
 # Build Args
 #is set from docker build cmd line
@@ -34,7 +40,7 @@ VOLUME ${LOG_DIR}
 VOLUME ${FILES_DIR}
 
 # Expose port 8080 to the outside world
-EXPOSE 8080
+EXPOSE 8080 443
 
 # Command to run the executable
 CMD ["/app/file-srv"]

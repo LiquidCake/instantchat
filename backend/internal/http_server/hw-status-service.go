@@ -2,7 +2,7 @@ package http_server
 
 import (
 	"errors"
-	"io/ioutil"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -22,12 +22,11 @@ const MeasurementsMaxTicks = 3
 var avgRecentCPUUsagePerc float64 = 0
 var lastRamUsagePerc float64 = 0
 
-// 12 slots for measurement each 5sec during 1 minute
-var cpuMeasurementsArr [12]float64
+var cpuMeasurementsArr [MeasurementsMaxTicks]float64
 var measurementsCounter = 0
 
 func getCPUSample() (idle, total uint64, error error) {
-	contents, err := ioutil.ReadFile("/proc/stat")
+	contents, err := os.ReadFile("/proc/stat")
 	if err != nil {
 		error = err
 		return
@@ -62,7 +61,7 @@ func getCPUSample() (idle, total uint64, error error) {
 }
 
 func getRAMUsage() (available, total uint64, error error) {
-	contents, err := ioutil.ReadFile("/proc/meminfo")
+	contents, err := os.ReadFile("/proc/meminfo")
 	if err != nil {
 		error = err
 		return
@@ -107,7 +106,6 @@ func startMeasuringHardwareStatus() {
 		//cycle breaks on app shutdown
 		for {
 			//Measure CPU
-
 			idle0, total0, err := getCPUSample()
 			if err != nil {
 				util.LogSevere("Failed to measure CPU (1st measurement): '%s'", err)
@@ -117,7 +115,7 @@ func startMeasuringHardwareStatus() {
 				continue
 			}
 
-			//measure CPU usage for last 5sec
+			//measure CPU usage after Xsec
 			time.Sleep(3 * time.Second)
 
 			idle1, total1, err := getCPUSample()
@@ -155,15 +153,15 @@ func startMeasuringHardwareStatus() {
 			lastRamUsagePerc = float64(ramUsagePerc)
 
 			// find the average CPU load from all recent measurements
-			if measurementsCounter >= MeasurementsMaxTicks {
+			if measurementsCounter >= (MeasurementsMaxTicks - 1) {
 				measurementsCounter = 0
 
 				var sum float64 = 0
-				for i := 0; i < len(cpuMeasurementsArr); i++ {
+				for i := 0; i < MeasurementsMaxTicks; i++ {
 					sum += cpuMeasurementsArr[i]
 				}
 
-				avgRecentCPUUsagePerc = sum / float64(len(cpuMeasurementsArr))
+				avgRecentCPUUsagePerc = sum / float64(MeasurementsMaxTicks)
 			} else {
 				measurementsCounter += 1
 			}

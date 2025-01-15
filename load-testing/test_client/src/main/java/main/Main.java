@@ -18,9 +18,9 @@ public class Main {
     public static final int TEST_ROOMS_AMOUNT = 10;                  //rooms created by each spawner thread
     public static final int TEST_ROOMS_RECREATE_COUNT = 1;
 
-    public static final int ROOM_LIFE_SPAN_MS = 15 * 60 * 1000;
+    public static final int ROOM_LIFE_SPAN_MS = 300 * 60 * 1000;
 
-    public static final int ROOM_USERS_ADDING_AMOUNT_PER_STEP = 3;   //how many users to add into room in 1 step
+    public static final int ROOM_USERS_ADDING_AMOUNT_PER_STEP = 2;   //how many users to add into room in 1 step
     public static final int ROOM_USERS_ADDING_STEPS_NUM = 2;         //how many times to add new users to room
 
     public static final int ROOM_USERS_ADDING_STEP_DELAY_MS = 1000; //10000

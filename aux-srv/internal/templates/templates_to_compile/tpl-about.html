@@ -3,18 +3,18 @@
 <head>
     <meta charset="utf-8">
 	  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, shrink-to-fit=no">
-    <meta name="description" content="Instantchat - instant chat rooms">
+    <meta name="description" content="Myinstantchat">
     <meta name="author" content="">
 
 	<!-- open graph -->
-	<meta property="og:description" content="Instantchat - instant chat rooms" />
-	<meta property="og:title" content="Instantchat - instant chat" />
+	<meta property="og:description" content="Myinstantchat" />
+	<meta property="og:title" content="Myinstantchat" />
 	<meta property="og:type"  content="website" />
 	<meta property="og:url"   content="{{.httpSchema}}://{{.domain}}" />
 	<meta property="og:locale" content="en_GB" />
 
 	<meta property="og:image" content="{{.httpSchema}}://{{.domain}}/static/${BUILD_VERSION}/img/site-image.png" />
-	<meta property="og:image:alt"   content="Instantchat" />
+	<meta property="og:image:alt"   content="Myinstantchat" />
 	<meta property="og:image:width" content="72" />
 	<meta property="og:image:height" content="50" />
 	<meta property="og:image:secure_url" content="{{.httpSchema}}://{{.domain}}/static/${BUILD_VERSION}/img/site-image.png" />
@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="/static/${BUILD_VERSION}/favicon/favicon.png">
     <link rel="icon" type="image/png" href="/static/${BUILD_VERSION}/favicon/favicon.png">
 
-    <title>Instantchat - instant chat</title>
+    <title>Myinstantchat - about</title>
 
     <!-- lib -->
     <link href="/static/${BUILD_VERSION}/css/dist/bootstrap.min.css" rel="stylesheet">
@@ -35,7 +35,7 @@
 <nav class="container-fluid main-navbar">
 	<div class="row">
 		<div class="col-lg-2 navbar-brand-wr d-none d-lg-block">
-			<a class="navbar-brand-link" href="/">instant<span class="brand-green-decor">c</span>hat</a>
+			<a class="navbar-brand-link" href="/">myinstant<span class="brand-green-decor">chat</span></a>
 		</div>
 
 		<div class="col-12 col-lg-10">
@@ -50,8 +50,8 @@
 					<ul class="col-2 col-lg-3 header-right navbar-nav">
 						<li class="nav-item text-nowrap">
 							<span class="header-right-text">instant chat rooms</span>
-							<a href="/" title="Instantchat">
-								<img class="header-right-logo" src="/static/${BUILD_VERSION}/img/logo.png" title="Instantchat" alt="Instantchat"/>
+							<a href="/" title="Myinstantchat">
+								<img class="header-right-logo" src="/static/${BUILD_VERSION}/img/logo.png" title="Myinstantchat" alt="Myinstantchat"/>
 							</a>
 						</li>
 					</ul>
@@ -70,11 +70,36 @@
 			<h2 class="recent-rooms-title">
 				my recent rooms
 			</h2>
-			<img class="recent-rooms-close" src="/static/${BUILD_VERSION}/img/x-square.svg" alt="close"/>
+			<img class="recent-rooms-close image-theme-light" src="/static/${BUILD_VERSION}/img/x-square.svg" alt="close"/>
+			<img class="recent-rooms-close image-theme-dark" src="/static/${BUILD_VERSION}/img/x-square-yellow.svg" alt="close"/>
 			<div class="clearfix"></div>
 		</div>
 
 		<div id="recent-rooms-wr"></div>
+	</div>
+
+	<div class="preferences-popup">
+		<div>
+			<h2 class="preferences-title">
+				preferences
+			</h2>
+			<img class="preferences-close image-theme-light" src="/static/${BUILD_VERSION}/img/x-square.svg" alt="close"/>
+			<img class="preferences-close image-theme-dark" src="/static/${BUILD_VERSION}/img/x-square-yellow.svg" alt="close"/>
+			<div class="clearfix"></div>
+		</div>
+
+		<div id="preferences-wr">
+			<div class="preferences-block-wr">
+				<p class="preferences-change-setting-title">change color theme:</p>
+				<a id="preferences-theme-light-btn" class="share-room-btn preferences-setting-record-btn" href="javascript:void(0);">light</a>
+				<a id="preferences-theme-dark-btn" class="share-room-btn preferences-setting-record-btn" href="javascript:void(0);">dark</a>
+			</div>
+			<div class="preferences-block-wr preferences-mode-key-wr d-none">
+				<p class="preferences-change-setting-title">change overlay mode key:</p>
+				<input id="preferences-key-record-input" />
+				<a id="preferences-key-record-btn" class="share-room-btn preferences-setting-record-btn background-greyed" href="javascript:void(0);">save key</a>
+			</div>
+		</div>
 	</div>
 
 	<div class="page-about-container container-fluid">
@@ -100,8 +125,18 @@
 							</a>
 						</li>
 						<li class="nav-item push-bot-mid">
-							<a idtitle="my recent #rooms" href="javascript:void(0);" class="main-sidebar-recent-rooms main-sidebar-top-item-2">
+							<a title="my recent #rooms" href="javascript:void(0);" class="main-sidebar-recent-rooms main-sidebar-top-item-2">
 								my recent rooms
+							</a>
+						</li>
+						<li class="nav-item">
+							<a title="preferences" href="javascript:void(0);" class="main-sidebar-preferences main-sidebar-top-item-2">
+								preferences
+							</a>
+						</li>
+						<li class="nav-item push-bot-mid">
+							<a title="connection-methods" href="/connection-methods" class="main-sidebar-download-app main-sidebar-top-item-2">
+								connection methods
 							</a>
 						</li>
 						<li class="nav-item main-sidebar-top-item-push">
@@ -110,6 +145,16 @@
 						<li class="nav-item main-sidebar-top-item-push">
 							<a title="about the service" href="/about" class="main-sidebar-top-item-2 main-sidebar-bot-item section-info-item">
 								about the service
+							</a>
+						</li>
+						<li class="nav-item main-sidebar-top-item-push">
+							<a title="privacy policy" href="/privacy-policy" class="main-sidebar-top-item-2 main-sidebar-bot-item section-info-item">
+								privacy policy
+							</a>
+						</li>
+						<li class="nav-item main-sidebar-top-item-push">
+							<a title="terms of service" href="/terms-of-service" class="main-sidebar-top-item-2 main-sidebar-bot-item section-info-item">
+								terms of service
 							</a>
 						</li>
 					</ul>
@@ -128,8 +173,18 @@
 							</a>
 						</li>
 						<li class="nav-item push-bot-mid">
-							<a idtitle="my recent #rooms" href="javascript:void(0);" class="main-sidebar-recent-rooms main-sidebar-top-item-2">
+							<a title="my recent #rooms" href="javascript:void(0);" class="main-sidebar-recent-rooms main-sidebar-top-item-2">
 								my recent rooms
+							</a>
+						</li>
+						<li class="nav-item">
+							<a title="preferences" href="javascript:void(0);" class="main-sidebar-preferences main-sidebar-top-item-2">
+								preferences
+							</a>
+						</li>
+						<li class="nav-item push-bot-mid">
+							<a title="connection methods" href="/connection-methods" class="main-sidebar-download-app main-sidebar-top-item-2">
+								connection methods
 							</a>
 						</li>
 						<li class="nav-item main-sidebar-top-item-push">
@@ -140,6 +195,16 @@
 								about the service
 							</a>
 						</li>
+						<li class="nav-item main-sidebar-top-item-push">
+							<a title="privacy policy" href="/privacy-policy" class="main-sidebar-top-item-2 main-sidebar-bot-item section-info-item">
+								privacy policy
+							</a>
+						</li>
+						<li class="nav-item main-sidebar-top-item-push">
+							<a title="terms of service" href="/terms-of-service" class="main-sidebar-top-item-2 main-sidebar-bot-item section-info-item">
+								terms of service
+							</a>
+						</li>
 					</ul>
 				</div>
 			</nav>
@@ -147,18 +212,7 @@
 			<main role="main" class="page-about-main-wr col-md-10 ml-sm-auto">
 
 				<div class="container-main container">
-					<div class="page-about-content-row row">
-						<div class="page-about-content-wr col-sm-12">
-							<h1 class="page-about-content-title">about the service</h1>
-							<div class="page-about-descr">
-								<p>-&nbsp;it's made as simple as possible</p>
-								<p>-&nbsp;available by <span class="font-weight-bold">direct URL</span>, unique for each room</p>
-							</div>
-							<div class="page-about-author">
-								<p>made by Some - some@some.com</p>
-							</div>
-						</div>
-					</div>
+					{{block "about-fragment" .}}fragment{{end}}
 				</div>
 
 			</main>

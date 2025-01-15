@@ -1,15 +1,12 @@
-#for local deployment with single backend instance - set just local machine IP
+#by default for local deployment - local machine IP is set
 backendInstances:
-  - 192.168.1.101:8080
-  - 192.168.1.102:8080
-  - 192.168.1.103:8080
+  - myinstantchat.org:12443
 
-domain: "192.168.1.100"
+domain: "myinstantchat.org"
 
-backendHttpSchema: "http"
+backendHttpSchema: "https"
 
 http:
-  port: ":8080"
   timeoutSec: 30
 
 shutdownWaitTimeoutSec: 10
@@ -27,25 +24,27 @@ forbiddenRoomNames:
   - hw
   - dashboards
   - about
+  - terms-of-service
+  - privacy-policy
   - control_page_proxy
   - favicon.ico
   - ctrl_command
+  - connection-methods
+  - universal-access
+  - app-win
+  - app-win-version
+  - direct_retrieval
 
-ctrlAuthLogin: "admin111"
-ctrlAuthPasswd: "password111"
+ctrlAuthLogin: "admin132"
+ctrlAuthPasswd: "password132"
 
+clientAgreementVersion: 2
 
-# ENV SPECIFIC
+userDrawingEnabled: true
 
-#values: dev / prod
-envType: "dev"
+mainHttpSchema: "https"
 
-mainHttpSchemaProd: "https"
-mainHttpSchemaDev: "http"
-
-cookiesProd:
+cookies:
     isSecure: true
 
-cookiesDev:
-    isSecure: false
-
+unsecureTestMode: false

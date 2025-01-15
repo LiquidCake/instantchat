@@ -5,7 +5,6 @@ const USER_DRAWING_PENCIL_LINE_WIDTH_FOR_TEXT_INPUT = 4;
 
 const USER_DRAWING_CANVAS_EDGE_LENGTH_SMALL = 220;
 const USER_DRAWING_CANVAS_EDGE_LENGTH_MID = 400;
-const USER_DRAWING_CANVAS_EDGE_LENGTH_LARGE = 700;
 
 const USER_DRAWING_CANVAS_EDGE_LENGTH_THRESHOLD_MID_WIDTH = 500;
 const USER_DRAWING_CANVAS_EDGE_LENGTH_THRESHOLD_MID_HEIGHT = 750;
@@ -17,8 +16,6 @@ const USER_DRAWING_CANVAS_EDGE_LENGTH_THRESHOLD_LARGE_HEIGHT = 1040;
 /* Variables */
 
 /* DOM objects references */
-
-const $toggleUserInputDrawingButton = $('.user-message-wr-toggle-input-drawing');
 
 const $drawingMainWr = $('.user-drawing-input-wr');
 
@@ -48,8 +45,6 @@ const $drawingLineWidthEl = $('#drawing-line-width');
 const $drawingShadowWidth = $('#drawing-shadow-width');
 const $drawingShadowOffset = $('#drawing-shadow-offset');
 
-const $drawModeTexture = $('#draw-mode-texure');
-
 const $fabricJsLink = $('.fabric-js-link');
 
 
@@ -58,6 +53,26 @@ const $fabricJsLink = $('.fabric-js-link');
 let userInputCanvas;
 let lastSelectedBrush;
 
+//textures
+
+let supportedTextureToolNames = [
+    'texture-bark',
+    'texture-brick',
+    'texture-bronze',
+    'texture-dirt',
+    'texture-dirt2',
+    'texture-fabric',
+    'texture-granit',
+    'texture-hexagone',
+    'texture-leaf',
+    'texture-leaf2',
+    'texture-leather',
+    'texture-stone',
+    'texture-stone2',
+    'texture-tree'
+];
+
+let textureBrushes = {};
 
 function initUserInputDrawing () {
     const canvasEdgeLength = pickCanvasEdgeLengthByCurrentScreenSize();
@@ -73,10 +88,7 @@ function initUserInputDrawing () {
     $drawingZoomReduceBtn.on('click', function () {
         let newCanvasEdgeLength;
 
-        if (userInputCanvas.width === USER_DRAWING_CANVAS_EDGE_LENGTH_LARGE) {
-            newCanvasEdgeLength = USER_DRAWING_CANVAS_EDGE_LENGTH_MID;
-
-        } else if (userInputCanvas.width === USER_DRAWING_CANVAS_EDGE_LENGTH_MID) {
+        if (userInputCanvas.width === USER_DRAWING_CANVAS_EDGE_LENGTH_MID) {
             newCanvasEdgeLength = USER_DRAWING_CANVAS_EDGE_LENGTH_SMALL;
 
         } else {
@@ -88,6 +100,8 @@ function initUserInputDrawing () {
             'confirm',
             function () {
                 changeUserInputCanvasSize(newCanvasEdgeLength);
+
+                return true;
             }
         );
     });
@@ -97,9 +111,6 @@ function initUserInputDrawing () {
 
         if (userInputCanvas.width === USER_DRAWING_CANVAS_EDGE_LENGTH_SMALL) {
             newCanvasEdgeLength = USER_DRAWING_CANVAS_EDGE_LENGTH_MID;
-
-        } else if (userInputCanvas.width === USER_DRAWING_CANVAS_EDGE_LENGTH_MID) {
-            newCanvasEdgeLength = USER_DRAWING_CANVAS_EDGE_LENGTH_LARGE;
 
         } else {
             return;
@@ -111,6 +122,8 @@ function initUserInputDrawing () {
                 'confirm',
                 function () {
                     changeUserInputCanvasSize(newCanvasEdgeLength);
+
+                    return true;
                 }
             );
         } else {
@@ -124,6 +137,8 @@ function initUserInputDrawing () {
             'confirm',
             function () {
                 userInputCanvas.clear();
+
+                return true;
             }
         );
     });
@@ -158,10 +173,17 @@ function initUserInputDrawing () {
     });
 
     $drawingTypeTextImg.on('click', function () {
+        $drawingModalInput.removeClass('d-none');
+
         showDrawingModalWindow(
-            'type your text below, click OK and then draw a line, you text will be attached to!',
+            'type your text below, click the button and then draw a line, you text will be attached to it.',
             'to step 2',
             function () {
+                //validate there is some text inputed
+                if (!$drawingModalInput.val()) {
+                    return false;
+                }
+
                 $drawingModalInput.addClass('d-none');
 
                 //switch to pencil
@@ -184,7 +206,10 @@ function initUserInputDrawing () {
                     path.segmentsInfo = pathInfo;
 
                     let pathLength = pathInfo[pathInfo.length - 1].length;
+
                     let textStr = $drawingModalInput.val();
+                    $drawingModalInput.val('');
+
                     let fontSize = 2.5 * pathLength / textStr.length;
                     let text = new fabric.Text(textStr, {
                         fontSize: fontSize,
@@ -198,6 +223,8 @@ function initUserInputDrawing () {
                     //bring old tool back
                     bringBackOldDrawingToolAfterTextInput(oldTool, oldLineWidth);
                 });
+
+                return true;
             }
         );
     });
@@ -205,6 +232,7 @@ function initUserInputDrawing () {
     $drawingOverlay.on('click', function () {
         $drawingOverlay.addClass('d-none');
         $drawingModalWr.addClass('d-none');
+        $drawingModalInput.addClass('d-none');
     });
 
     $toggleDrawingModeBtn.on('click', function () {
@@ -325,15 +353,6 @@ function initUserInputDrawing () {
         return patternCanvas;
     };
 
-
-    let img = new Image();
-
-    let texturePatternBrush = new fabric.PatternBrush(userInputCanvas);
-    texturePatternBrush.source = img;
-
-    img.src = $drawModeTexture.attr('data-base-src') + 'texture1.png';
-
-
     /* on tool selection -  */
 
     $drawingModeSelector.on('change', function () {
@@ -356,10 +375,12 @@ function initUserInputDrawing () {
             userInputCanvas.freeDrawingBrush = diamondPatternBrush;
             lastSelectedBrush = 'diamond';
 
-        } else if (this.value === 'texture') {
+        } else if (supportedTextureToolNames.includes(this.value)) {
+            const toolName = this.value;
+
             isTextureMode = true;
-            userInputCanvas.freeDrawingBrush = texturePatternBrush;
-            lastSelectedBrush = 'texture';
+            userInputCanvas.freeDrawingBrush = initTexture(toolName);
+            lastSelectedBrush = toolName;
 
             $drawingLineWidthEl.val(USER_DRAWING_TEXTURE_TOOL_DEFAULT_WIDTH);
             $($drawingLineWidthEl[0].previousSibling).text(USER_DRAWING_TEXTURE_TOOL_DEFAULT_WIDTH);
@@ -419,6 +440,8 @@ function initUserInputDrawing () {
             'confirm',
             function () {
                 window.open($fabricJsLink.attr('href'), '_blank').focus();
+
+                return true;
             }
         );
     });
@@ -483,11 +506,7 @@ function hideUserInputDrawingBlock () {
 }
 
 function pickCanvasEdgeLengthByCurrentScreenSize () {
-    if (currentViewportWidth >= USER_DRAWING_CANVAS_EDGE_LENGTH_THRESHOLD_LARGE_WIDTH &&
-        currentViewportHeight >= USER_DRAWING_CANVAS_EDGE_LENGTH_THRESHOLD_LARGE_HEIGHT) {
-        return USER_DRAWING_CANVAS_EDGE_LENGTH_LARGE;
-
-    } else if (currentViewportWidth >= USER_DRAWING_CANVAS_EDGE_LENGTH_THRESHOLD_MID_WIDTH &&
+    if (currentViewportWidth >= USER_DRAWING_CANVAS_EDGE_LENGTH_THRESHOLD_MID_WIDTH &&
         currentViewportHeight >= USER_DRAWING_CANVAS_EDGE_LENGTH_THRESHOLD_MID_HEIGHT) {
         return USER_DRAWING_CANVAS_EDGE_LENGTH_MID;
 
@@ -513,10 +532,12 @@ function showDrawingModalWindow (titleText, buttonText, onClickCallback) {
 
     $drawingModalBtn.off('click');
     $drawingModalBtn.on('click', function (e) {
-        onClickCallback(e);
+        let success = onClickCallback(e);
 
-        $drawingOverlay.addClass('d-none');
-        $drawingModalWr.addClass('d-none');
+        if (success) {
+            $drawingOverlay.addClass('d-none');
+            $drawingModalWr.addClass('d-none');
+        }
     });
 }
 
@@ -547,4 +568,18 @@ function loadImageToCanvas (imageContentBase64) {
         userInputCanvas.add(img);
         userInputCanvas.renderAll();
     });
+}
+
+function initTexture (toolName) {
+    if (!textureBrushes[toolName]) {
+        let textureImg = new Image();
+        let texturePatternBrush = new fabric.PatternBrush(userInputCanvas);
+        texturePatternBrush.source = textureImg;
+
+        textureImg.src = $drawingOptionsEl.attr('data-base-src') + '/textures/' + toolName + '.png';
+
+        textureBrushes[toolName] = texturePatternBrush;
+    }
+
+    return textureBrushes[toolName];
 }

@@ -1,0 +1,41 @@
+{{define "about-fragment"}}
+<div class="page-about-content-row download-app-content row">
+  <div class="page-about-content-wr download-app-content-inner-wr col-sm-12">
+    <div class="download-app-wr">
+      <div class="download-app-disclamer-wr">
+        <span class="download-app-disclamer-warning">WARNING:</span> by using Myinstantchat service through any connection means you agree to our <a href="/terms-of-service" alt="Terms of Service" class="page-about-link">Terms of Service</a>
+      </div>
+
+      <div class="direct-call-wr">
+        <h3 class="about-page-title">call chat from any http client</h3>
+        <div class="direct-call-text-wr">
+          <p class="direct-call-text">you can send/view messages even if your device is only capable of sending http requests - like any old browser or just <span class="font-weight-bold">curl</span></p>
+          <p></p>
+          <p class="direct-call-text">-&nbsp;retrieve message: <span class="font-code">{{.httpSchema}}://{{.domain}}/r/myRoom</span> (note <span class="font-code">/r/</span> part)</p>
+          <p class="direct-call-text">(add <span class="font-code">?p=myPassword&l=5</span> to send room password or limit messages if required)</p>
+          <p class="direct-call-text">-&nbsp;send message: <span class="font-code">{{.httpSchema}}://{{.domain}}/s/myRoom?m=lalala-123</span> (note <span class="font-code">/s/</span> part)</p>
+          <p></p>
+          <p class="direct-call-text">Plain <span class="font-code">HTTP</span> is also supported - for really old/restricted devices</p>
+        </div>
+        <div>
+          <a href="{{.httpSchema}}://{{.domain}}/universal-access" alt="universal access">
+            <img class="direct-call-preview-image" src="/static/${BUILD_VERSION}/img/platforms/universal-preview.png" />
+          </a>
+        </div>
+      </div>
+
+      <div class="download-console-wr">
+        <h3 class="about-page-title">download python console client</h3>
+        <h4 class="about-page-subtitle">
+          with&nbsp;piping&nbsp;to&nbsp;<span class="about-page-subtitle-overlayed">stdin</span>
+        </h4>
+        <img class="download-app-image" src="/static/${BUILD_VERSION}/img/platforms/app-python-img.png" />
+
+        <a class="download-app-btn" href="/static/${BUILD_VERSION}/app/myinstantchat_python.zip">download python console client</a>
+        <b><i>--dev: put python client from 'platforms/console/python/' under respective path</i></b>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{end}}

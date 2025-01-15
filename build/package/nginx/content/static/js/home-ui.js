@@ -3,6 +3,8 @@
 const $pageHomeMainWr = $('.page-home-main-wr');
 const $homeContainerMainCenterWr = $('.page-home-container-main-center-wr');
 
+const $roomFormTitle = $('.room-form-title');
+
 const $roomJoinCreateBtn = $('#room-join-create');
 
 /* vars */
@@ -34,14 +36,25 @@ function initHomePageUI () {
         hideMyRecentRoomsPopup();
     });
 
+    $preferencesLink.on('click', function () {
+        hideMenuMobile();
+        showPreferencesPopup();
+    });
+
+    $preferencesClose.on('click', function () {
+        hidePreferencesPopup();
+    });
+
     $mainOverlay.on('click', function () {
         hideMenuMobile();
         hideMyRecentRoomsPopup();
+        hidePreferencesPopup();
     });
 
     $document.on('keydown', function(e) {
         if (e.which === KEY_CODE_ESCAPE) {
             hideMyRecentRoomsPopup();
+            hidePreferencesPopup();
         }
     });
 
