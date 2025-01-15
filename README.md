@@ -7,8 +7,7 @@ Chat is anonymous and meant for 'operative' use - messages are not persisted any
 Room will start to erase old messages once count goes beyond some limit (1000 by default)  
 
 ###
-Service is written in GO (backend) and jquery (frontend)  
-GUI is written in JS+Jquery by hand. It is responsive, cross-browser and cross-platform  
+Services are written in Go (backend), GUI is written in JS+Jquery by hand. It is responsive, cross-browser and cross-platform  
 Base service monitoring (Grafana/Prometheus) is included  
 
 ### Check out author's deployed instance at https://avajoin.net/  
