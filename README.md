@@ -143,9 +143,8 @@ Additionally, for multi-node deployment you would want to add all backend node a
 ### build the project
 Take a look at `build` section - build project after configuration to prepare docker images  
 
+### For `Multi-node deployment in a 'gateway' mode` - example server node addresses are considered to be following:
 ```
-For `Multi-node deployment in a 'gateway' mode` - example server node addresses are set across default configs and deployment commands as following:
-
 192.168.1.100 - as IP of 'gateway' node (where nginx+aux-srv are deployed)
 192.168.1.101, 192.168.1.102, 192.168.1.103 - as 1st, 2nd and 3rd backend nodes
 192.168.1.255 - as monitoring node
