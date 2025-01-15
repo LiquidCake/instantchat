@@ -345,7 +345,7 @@ Dashboard files for single-node deployment are located at ```instantchat/build/d
 
 
 ## Admin panel (kind of)
-#### (wont work on local setup without additional DNS server to point our domain to localhost - nginx doesnt use /etc/hosts)
+##### (wont work on local setup without additional DNS server that would point our domain to localhost ip - nginx doesnt use /etc/hosts for dynamic resolution we require here)
 Simple admin panel that allows some runtime operations with backends is available at `https://{domain}/control_page_proxy`
 Make sure to change login/password variables `CTRL_AUTH_LOGIN, CTRL_AUTH_PASSWD` in docker-compose file(s)
 
