@@ -1345,7 +1345,7 @@ func RetrieveRoomMessagesDirectly(roomName string, roomPassword string, messages
 		err := createRoomByDirectMessageFlow(roomName, roomPassword, ExternalUserSessionUUID)
 
 		if err != "" {
-			util.LogTrace("failed to create room '%s' for dirrect message flow. Erorr: %s", roomName, err)
+			util.LogTrace("failed to create room '%s' for direct message flow. Error: %s", roomName, err)
 
 			return util.BuildDirectRoomMessagesErrorResponse(
 				fmt.Sprintf("error: failed to create room - %s", err), responseFormat)
@@ -1528,7 +1528,7 @@ func SendRoomMessageDirectly(roomName string, roomPassword string, message strin
 		err := createRoomByDirectMessageFlow(roomName, roomPassword, ExternalUserSessionUUID)
 
 		if err != "" {
-			util.LogTrace("failed to create room '%s' for dirrect message flow. Erorr: %s", roomName, err)
+			util.LogTrace("failed to create room '%s' for direct message flow. Error: %s", roomName, err)
 
 			return util.BuildDirectRoomMessagesErrorResponse(
 				fmt.Sprintf("error: failed to create room - %s", err), responseFormat)

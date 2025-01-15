@@ -64,7 +64,7 @@ There are 3 deployment configurations prepared:
 ```all services are deployed in on-server docker via single compose file```
 
 
-## Configuration:
+## Configuration
 
 Check out config files and set your domain, node addresses etc.
 ```
@@ -99,7 +99,7 @@ This will build all images and start them in local docker (using unified docker 
 That's it, images are ready to be deployed to server nodes if you configured project for one of remote deployment variants (see corresponding sections). Stop docker and start uploading images.  
 Or if project was configured to run locally - just open your local domain address in browser  
 
-## Run locally:
+## Run locally
 Web UI is https-only, so you will have to use a real or self-signed certificate  
 
 - invent some test domain like e.g. `myinstantchat.org`  
@@ -327,7 +327,7 @@ sudo scp \
 instantchat@192.168.1.100:/home/instantchat
 ```
 
-## import docker images and launch containers
+### import docker images and launch containers
 execute on remote node:
 ```
 #WARNING: contains 'docker image prune' which removes unused containers
