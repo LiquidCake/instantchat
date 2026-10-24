@@ -7,7 +7,7 @@ build_num=0 #dynamic
 
 #stop docker / delete containers and images
 echo "=== Stopping/deleting containers and images"
-docker-compose -f build/package/docker-compose-local-unified.yml down -v
+docker compose -f build/package/docker-compose-local-unified.yml down -v
 
 #remove all docker images (UNCOMMENT IF NEEDED)
 #docker rmi -f `sudo docker images --format="{{.Repository}}:{{.Tag}}"`
@@ -118,6 +118,6 @@ docker tag nginx nginx:$BUILD_VERSION
 # Run containers
 echo ""
 echo "=== Starting containers"
-docker-compose -f build/package/docker-compose-local-unified.yml up --force-recreate --remove-orphans
+docker compose -f build/package/docker-compose-local-unified.yml up --force-recreate --remove-orphans
 
 echo ""
