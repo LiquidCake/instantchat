@@ -10,6 +10,8 @@ Room will start to erase old messages once count goes beyond some limit (1000 by
 Services are written in Go (backend), GUI is written in JS+Jquery by hand. It is responsive, cross-browser and cross-platform  
 Base service monitoring (Grafana/Prometheus) is included  
 
+No AI tools were used during development  
+
 ### Check out author's deployed instance at https://avajoin.net/  
 
 ### Screenshots
@@ -94,7 +96,8 @@ After all above steps - take a look at a section about deployment variant you ar
 After project `configuration` for a particular deployment type (local or multi-node or single-node, see respective sections):  
 On a Linux machine (or WSL) with GO compiler and docker installed, run in project root:
 
-Run ```sudo ./rebuild-docker.sh```
+Run ```sudo ./rebuild-docker.sh```  
+or ```sudo ./rebuild-docker.sh docker-clean``` to avoid docker base image caching
 
 This will build all images and start them in local docker (using unified docker file for local deployment - ```instantchat/build/package/docker-compose-local-unified.yml```)
 

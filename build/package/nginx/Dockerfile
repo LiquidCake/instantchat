@@ -1,5 +1,8 @@
 FROM nginx
 
+RUN apk --no-cache add ca-certificates \
+    && apk --no-cache upgrade ca-certificates
+
 ARG build_ver
 
 #copy static files

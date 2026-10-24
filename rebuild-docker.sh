@@ -5,6 +5,21 @@ major_version=1
 minor_version=1
 build_num=0 #dynamic
 
+docker_clean=false
+
+for arg in "$@"; do
+  if [ "$arg" = "docker-clean" ]; then
+    docker_clean=true
+    break
+  fi
+done
+
+if [ "$docker_clean" = true ]; then
+  echo "Docker build: clean build"
+else
+  echo "Docker build: using cache"
+fi
+
 #stop docker / delete containers and images
 echo "=== Stopping/deleting containers and images"
 docker compose -f build/package/docker-compose-local-unified.yml down -v
@@ -63,7 +78,12 @@ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildV
 cd ../../
 
 #build aux-srv docker image
-docker build -t aux-srv -f build/package/aux-srv/Dockerfile .
+if [ "$docker_clean" = true ]; then
+  docker build --pull --no-cache -t aux-srv -f build/package/aux-srv/Dockerfile .
+else
+  docker build -t aux-srv -f build/package/aux-srv/Dockerfile .
+fi
+
 docker tag aux-srv aux-srv:$BUILD_VERSION
 
 # Build file-srv
@@ -80,7 +100,12 @@ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildV
 cd ..
 
 #build file-srv docker image
-docker build -t file-srv -f build/package/file-srv/Dockerfile .
+if [ "$docker_clean" = true ]; then
+  docker build --pull --no-cache -t file-srv -f build/package/file-srv/Dockerfile .
+else
+  docker build -t file-srv -f build/package/file-srv/Dockerfile .
+fi
+
 docker tag file-srv file-srv:$BUILD_VERSION
 
 
@@ -102,7 +127,12 @@ CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags "-X main.BuildV
 cd ../../
 
 #build backend docker image
-docker build -t backend -f build/package/backend/Dockerfile .
+if [ "$docker_clean" = true ]; then
+  docker build --pull --no-cache -t backend -f build/package/backend/Dockerfile .
+else
+  docker build -t backend -f build/package/backend/Dockerfile .
+fi
+
 docker tag backend backend:$BUILD_VERSION
 
 
@@ -111,7 +141,13 @@ echo ""
 echo "=== Building nginx"
 
 #build nginx docker image
-docker build -t nginx --build-arg build_ver=$BUILD_VERSION -f build/package/nginx/Dockerfile .
+
+if [ "$docker_clean" = true ]; then
+  docker build --pull --no-cache -t nginx --build-arg build_ver=$BUILD_VERSION -f build/package/nginx/Dockerfile .
+else
+  docker build -t nginx --build-arg build_ver=$BUILD_VERSION -f build/package/nginx/Dockerfile .
+fi
+
 docker tag nginx nginx:$BUILD_VERSION
 
 

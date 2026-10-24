@@ -1,6 +1,7 @@
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates \
+    && apk --no-cache upgrade ca-certificates
 
 # Set the Current Working Directory inside the container
 RUN mkdir /app
